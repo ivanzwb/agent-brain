@@ -1,19 +1,58 @@
 {
   "name": "@biosbot/agent-brain",
   "version": "0.0.1",
-  "description": "Agent ReAct framework with cognitive planning engine",
+  "description": "Agent ReAct framework with cognitive planning engine — five-phase cognitive cycle with per-step ReAct loops",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist"
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "prepublishOnly": "npm run build"
   },
-  "devDependencies": {
-    "typescript": "^5.4.0",
-    "@biosbot/agent-memory": "^0.1.1",
-    "@biosbot/agent-skills": "^0.1.0"
+  "keywords": [
+    "agent",
+    "agent-brain",
+    "react",
+    "react-loop",
+    "cognitive",
+    "planner",
+    "llm",
+    "ai",
+    "openai",
+    "tool-calling",
+    "function-calling",
+    "typescript"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivanzwb/agent-brain.git"
+  },
+  "homepage": "https://github.com/ivanzwb/agent-brain#readme",
+  "bugs": {
+    "url": "https://github.com/ivanzwb/agent-brain/issues"
+  },
+  "author": "ivanzwb",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "openai": "^6.33.0"
+  },
+  "devDependencies": {
+    "@biosbot/agent-memory": "^0.1.1",
+    "@biosbot/agent-skills": "^0.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.19.39",
+    "jest": "^30.3.0",
+    "rimraf": "^6.1.3",
+    "ts-jest": "^29.4.9",
+    "typescript": "^5.4.0"
   }
 }

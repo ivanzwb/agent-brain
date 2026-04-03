@@ -18,11 +18,6 @@ import { SkillHubAdapter } from './skill-hub-adapter';
 //   SKILLS_DIR       — agent-skills 技能存储目录（默认 ./demo-skills）
 // ============================================================
 
-process.env.OPENAI_API_KEY = 'sk-f1450f3f4f804d0487851efa26009094';
-process.env.OPENAI_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-process.env.OPENAI_MODEL = 'qwen-max-2025-01-25';
-process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
-process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
 
 async function main() {
   const userInput = process.argv[2];
