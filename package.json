@@ -1,0 +1,19 @@
+{
+  "name": "agent-brain",
+  "version": "0.1.0",
+  "description": "Agent ReAct framework with cognitive planning engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@biosbot/agent-memory": "^0.1.1",
+    "@biosbot/agent-skills": "^0.1.0",
+    "openai": "^6.33.0"
+  }
+}
