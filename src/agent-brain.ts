@@ -24,6 +24,7 @@ import { SkillHub } from './skill/skill-hub';
 import { InnateToolHub } from './innate-tools/innate-tool-hub';
 import { HubTool } from './hub-tool';
 import { MemoryHub } from './memory/memory-hub';
+import { AskUserTool } from './innate-tools/ask-user-tool';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -70,11 +71,32 @@ export class AgentBrain {
     this.innateToolHub.register(new HubTool(this.memory, 'knowledge_search'));
     this.innateToolHub.register(new HubTool(this.memory, 'knowledge_read'));
 
+    // 注册 ask_user 工具，用于请求用户输入
+    this.innateToolHub.register(new AskUserTool(this.innateToolHub));
+
     this.eventPublisher = opts.eventPublisher;
+    if (this.eventPublisher) {
+      this.innateToolHub.setEventPublisher(this.eventPublisher);
+    }
     this.budget = new PromptBudget(
       this.model,
       this.config.modelContextSize,
     );
+  }
+
+  /**
+   * Provide user input when the agent is waiting for input.
+   * Call this when you receive a 'user:input-request' event.
+   */
+  provideUserInput(input: string): void {
+    this.innateToolHub.provideUserInput(input);
+  }
+
+  /**
+   * Check if the agent is waiting for user input.
+   */
+  isWaitingForUserInput(): boolean {
+    return this.innateToolHub['_userInputResolver'] !== undefined;
   }
 
   // ===========================================================
@@ -118,18 +140,19 @@ export class AgentBrain {
       let executeResult: ExecuteResult | undefined;
       let reflection: Reflection | undefined;
       let replanCount = 0;
+      let userContext = userInput;
 
       while (replanCount <= this.config.maxReplans) {
         // Phase 3: PLAN
-        plan = await this.plan(userInput, perception, assessment, tracker, reflection);
+        plan = await this.plan(userContext, perception, assessment, tracker, reflection, userContext !== userInput ? userContext : undefined);
         this.emit('phase:plan', { taskId, plan, replanCount });
 
         // Phase 4: EXECUTE
-        executeResult = await this.execute(assessment, plan, tracker);
+        executeResult = await this.execute(assessment, plan, tracker, userContext);
         this.emit('phase:execute', { taskId, result: executeResult });
 
         // Phase 5: REFLECT
-        reflection = await this.reflect(userInput, perception, plan, executeResult, tracker);
+        reflection = await this.reflect(userContext, perception, plan, executeResult, tracker);
         this.emit('phase:reflect', { taskId, reflection });
 
         if (!reflection.needsReplan) break;
@@ -241,6 +264,7 @@ export class AgentBrain {
     assessment: Assessment,
     tracker: TokenTracker,
     previousReflection?: Reflection,
+    userContext?: string,
   ): Promise<Plan> {
     const phase = CognitivePhase.PLAN;
     const guidance = this.scheduler.generateGuidance(phase);
@@ -249,8 +273,16 @@ export class AgentBrain {
     const messages: Message[] = [
       { role: 'system', content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}` },
       { role: 'user', content: userInput },
-      { role: 'assistant', content: `[PERCEIVE]\n${JSON.stringify(perception)}\n\n[ASSESS]\n${JSON.stringify(assessment)}` },
     ];
+
+    if (userContext && userContext !== userInput) {
+      messages.push({
+        role: 'user',
+        content: `[Additional context from user interaction during execution]\n${userContext}`,
+      });
+    }
+
+    messages.push({ role: 'assistant', content: `[PERCEIVE]\n${JSON.stringify(perception)}\n\n[ASSESS]\n${JSON.stringify(assessment)}` });
 
     if (previousReflection) {
       messages.push({
@@ -273,6 +305,7 @@ export class AgentBrain {
     assessment: Assessment,
     plan: Plan,
     tracker: TokenTracker,
+    userContext?: string,
   ): Promise<ExecuteResult> {
     const controller = new LoopController(
       this.config.maxSteps,
@@ -298,6 +331,7 @@ export class AgentBrain {
       plan,
       assessment,
       thinkingGuidance: guidance,
+      userContext,
     });
   }
 

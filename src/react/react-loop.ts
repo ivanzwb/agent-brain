@@ -48,6 +48,8 @@ export interface ReactLoopContext {
   assessment: Assessment;
   /** 思维模式引导文本 */
   thinkingGuidance: string;
+  /** 用户的上下文信息（包含之前通过 ask_user 提供的信息） */
+  userContext?: string;
 }
 
 export class ReactLoop {
@@ -131,12 +133,22 @@ export class ReactLoop {
     // 构建初始消息
     const systemPrompt = this.buildSystemPrompt(ctx, planOverview, planStep, memoryText);
 
-    const userPrompt = this.buildUserPrompt(ctx.plan, planStep, priorContext);
+    const userPrompt = this.buildUserPrompt(ctx.plan, planStep, priorContext, ctx.userContext);
 
     const messages: Message[] = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ];
+
+    // 注入用户之前通过 ask_user 提供的所有上下文
+    const userProvidedContext = this.innateToolHub.getUserProvidedContext();
+    if (userProvidedContext.length > 0) {
+      const contextStr = userProvidedContext.map((ctx, i) => `[Response ${i + 1}]: ${ctx}`).join('\n\n');
+      messages.push({
+        role: 'user',
+        content: `[Previous User Responses from ask_user tool]\n${contextStr}\n\nIMPORTANT: Use the information above instead of asking for it again.`,
+      });
+    }
 
     // 天生工具
     const innateTools = this.innateToolHub.getTools();
@@ -202,7 +214,6 @@ export class ReactLoop {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const skillName: string = call.arguments['skillName'] as string;
-            // 加载技能后刷新技能目录
             skillTools = this.skillHub.getTools(skillName);
           }
         } catch (err) {
@@ -293,7 +304,7 @@ export class ReactLoop {
   /**
    * 构建 user prompt：策略 + 当前步骤目标 + 前置输出 + 行动指令。
    */
-  private buildUserPrompt(plan: Plan, planStep: PlanStep, priorContext: string): string {
+  private buildUserPrompt(plan: Plan, planStep: PlanStep, priorContext: string, userContext?: string): string {
     const lines: string[] = [
       `Strategy: ${plan.strategy}`,
       '',
@@ -301,6 +312,9 @@ export class ReactLoop {
     ];
     if (priorContext) {
       lines.push('', '[Prior Step Outputs]', priorContext);
+    }
+    if (userContext) {
+      lines.push('', '[User Provided Context (from ask_user tool)]', userContext);
     }
     lines.push(
       '',

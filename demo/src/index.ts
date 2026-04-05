@@ -1,51 +1,64 @@
-import { createMemory } from '@biosbot/agent-memory';
 import { SkillFramework } from '@biosbot/agent-skills';
 import { AgentBrain } from '../../src/agent-brain';
 import { OpenAIClient } from '../../src/model/openai-client';
-import { MemoryHubAdapter } from './memory-hub-adapter';
 import { SkillHubAdapter } from './skill-hub-adapter';
-
-// ============================================================
-// Demo — 使用 agent-memory + agent-skills 集成 AgentBrain
-//
-// 用法：
-//   OPENAI_API_KEY=sk-xxx npx ts-node demo/index.ts "你的问题"
-//
-// 可选环境变量：
-//   OPENAI_BASE_URL  — API 端点（默认 https://api.openai.com/v1）
-//   OPENAI_MODEL     — 模型名（默认 gpt-4o）
-//   MEMORY_DATA_DIR  — agent-memory 数据目录（默认 ./demo-data）
-//   SKILLS_DIR       — agent-skills 技能存储目录（默认 ./demo-skills）
-// ============================================================
+import { MockMemoryHubAdapter } from './mock-memory-hub-adapter';
+import * as readline from 'readline';
 
 
-async function main() {
-  const userInput = process.argv[2];
-  if (!userInput) {
-    console.error('Usage: npx ts-node demo/index.ts "Your question here"');
-    process.exit(1);
-  }
+process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
+process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
 
-  // ---- 1. 初始化 agent-memory ----
-  const agentMemory = await createMemory({
-    dataDir: process.env.MEMORY_DATA_DIR ?? './memory-data',
+type CLIState = 'idle' | 'waiting-task' | 'processing' | 'waiting-user-input';
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+let isRunning = true;
+let state: CLIState = 'idle';
+let currentBrain: AgentBrain | null = null;
+
+const memory = new MockMemoryHubAdapter();
+const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
+const skills = new SkillHubAdapter(sf);
+const model = new OpenAIClient({
+  baseURL: process.env.OPENAI_BASE_URL,
+  apiKey: process.env.OPENAI_API_KEY,
+  model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+  temperature: 0.1,
+});
+
+console.log('\n' + '='.repeat(60));
+console.log('🧠 AgentBrain 交互式 CLI');
+console.log('='.repeat(60));
+console.log('输入您的请求，按 Enter 发送');
+console.log('输入 :exit 或按 Ctrl+C 退出\n');
+
+function promptInput(promptText: string): Promise<string> {
+  return new Promise((resolve) => {
+    if (!isRunning || (rl as any).closed) {
+      resolve('');
+      return;
+    }
+    rl.question(promptText, (answer) => {
+      resolve(answer);
+    });
   });
+}
 
-  // ---- 2. 初始化 agent-skills ----
-  const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
+async function handleUserInput(question: string): Promise<string> {
+  state = 'waiting-user-input';
+  const answer = await promptInput(`\n❓ ${question}\n> `);
+  state = 'processing';
+  return answer;
+}
 
-  // ---- 3. 构建适配器和组件 ----
-  const memory = new MemoryHubAdapter(agentMemory);
-  const skills = new SkillHubAdapter(sf);
-  const model = new OpenAIClient({
-    baseURL: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY,
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-    temperature: 0.7,
-  });
-
-  // ---- 4. 创建 AgentBrain ----
-  const brain = new AgentBrain({
+function runAgent(userInput: string): void {
+  state = 'processing';
+  
+  currentBrain = new AgentBrain({
     model,
     memory,
     skills,
@@ -57,31 +70,73 @@ async function main() {
     },
     eventPublisher: {
       publish(type: string, payload: unknown) {
-        console.log(`[${type}]`, JSON.stringify(payload, null, 2).slice(0, 200));
+        if (type === 'user:input-request') {
+          const { question } = payload as { question: string };
+          if (state === 'waiting-user-input') return;
+          handleUserInput(question).then((answer) => {
+            currentBrain?.provideUserInput(answer);
+          });
+        }
+        if (['task:start', 'phase:perceive', 'phase:assess', 'phase:plan', 'phase:execute', 'phase:reflect'].includes(type)) {
+          console.log(`\n[${type}]`);
+        }
       },
     },
   });
 
-  // ---- 5. 运行任务 ----
-  console.log(`\n🧠 AgentBrain 开始处理: "${userInput}"\n`);
-  const result = await brain.run(userInput);
-
-  // ---- 6. 输出结果 ----
-  console.log('\n' + '='.repeat(60));
-  console.log(`状态: ${result.status}`);
-  console.log(`终止原因: ${result.terminationReason}`);
-  console.log(`耗时: ${result.durationMs}ms`);
-  console.log(`Token 使用: ${JSON.stringify(result.tokenUsage)}`);
-  console.log(`步骤数: ${result.steps.length}`);
-  console.log('='.repeat(60));
-  console.log('\n最终回答:\n');
-  console.log(result.finalAnswer ?? '(无回答)');
-
-  // ---- 7. 清理 ----
-  await agentMemory.close();
+  currentBrain.run(userInput)
+    .then((result) => {
+      console.log('\n' + '='.repeat(60));
+      console.log(`📊 状态: ${result.status}`);
+      console.log(`⏱️  耗时: ${result.durationMs}ms`);
+      console.log(`🔢 Token: ${result.tokenUsage.totalTokens}`);
+      console.log('='.repeat(60));
+      console.log('\n📝 回答:\n');
+      console.log(result.finalAnswer ?? '(无回答)');
+      console.log();
+      state = 'idle';
+      askTask();
+    })
+    .catch((err) => {
+      console.error('❌ 执行出错:', String(err));
+      state = 'idle';
+      askTask();
+    });
 }
 
-main().catch((err) => {
-  console.error('Fatal error:', err);
-  process.exit(1);
+async function askTask() {
+  if (!isRunning) return;
+  if (state !== 'idle') return;
+  
+  state = 'waiting-task';
+  const input = await promptInput('请输入您的请求: ');
+  
+  if (!input.trim()) {
+    state = 'idle';
+    askTask();
+    return;
+  }
+  if (input.trim().toLowerCase() === ':exit') {
+    console.log('\n👋 再见!');
+    isRunning = false;
+    rl.close();
+    process.exit(0);
+    return;
+  }
+  
+  console.log(`\n🚀 开始处理: "${input}"\n`);
+  runAgent(input);
+}
+
+process.on('SIGINT', () => {
+  isRunning = false;
+  console.log('\n\n👋 再见!');
+  rl.close();
+  process.exit(0);
 });
+
+rl.on('close', () => {
+  isRunning = false;
+});
+
+askTask();

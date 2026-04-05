@@ -42,6 +42,7 @@ The framework implements a nested ReAct architecture:
 - **Five-phase cognitive cycle** mimicking human thought processes
 - **Per-step ReAct loops** for granular execution control
 - **Dynamic skill acquisition** — agents can install new skills during execution
+- **Interactive user input** — agents can request user input during execution via `ask_user` tool
 - **Four thinking modes**: CREATIVE, LOGICAL, EMPATHETIC, STRUCTURAL
 - **Token budget management** for context window optimization
 - **Memory integration** for context-aware execution
@@ -105,6 +106,27 @@ The framework dynamically adjusts thinking mode weights for each cognitive phase
 - **Skill Packages**: Domain-specific tools loaded on-demand
 
 The agent can dynamically acquire new skills during execution using innate tools like `skill_install` and `skill_load_main`.
+
+### User Input During Execution
+
+The agent can request user input during execution using the `ask_user` tool. Subscribe to the `user:input-request` event and call `provideUserInput()`:
+
+```typescript
+const agent = new AgentBrain({
+  // ... config
+  eventPublisher: {
+    publish(type, payload) {
+      if (type === 'user:input-request') {
+        const { question } = payload;
+        const userResponse = await getUserInput(question);
+        agent.provideUserInput(userResponse);
+      }
+    },
+  },
+});
+```
+
+Use `agent.isWaitingForUserInput()` to check if the agent is currently waiting for input.
 
 ## API Reference
 

@@ -31,8 +31,6 @@ export class LoopController {
     return this._lastHeartbeat;
   }
 
-  // ----- State transitions -----
-
   start(): void {
     this._state = TaskStatus.RUNNING;
     this._lastHeartbeat = Date.now();
@@ -57,7 +55,6 @@ export class LoopController {
   terminate(): void {
     this._state = TaskStatus.TERMINATED;
     this._terminationReason = TerminationReason.USER_TERMINATED;
-    // Release any pause wait
     this._pauseResolve?.();
     this._pausePromise = undefined;
     this._pauseResolve = undefined;
@@ -68,8 +65,6 @@ export class LoopController {
       await this._pausePromise;
     }
   }
-
-  // ----- Step tracking -----
 
   incrementStep(): void {
     this._stepCount++;
@@ -86,8 +81,6 @@ export class LoopController {
   updateHeartbeat(): void {
     this._lastHeartbeat = Date.now();
   }
-
-  // ----- Termination check -----
 
   checkTermination(): TerminationCheck {
     if (this._state === TaskStatus.TERMINATED) {

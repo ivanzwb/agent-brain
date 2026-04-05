@@ -2,23 +2,43 @@ import type {
   InnateTool,
   ToolDefinition,
 } from './types';
-import type { IHub } from '../types';
-
-// ============================================================
-// InnateToolHub — 天生工具的统一注册与调度中心
-//
-// 作为单一 InnateToolHub 注入 AgentBrain / ReactLoop，
-// 将所有系统内建工具（搜索技能、安装技能、文件操作等）
-// 聚合为统一的工具列表和执行入口。
+import type { IHub, IEventPublisher } from '../types';
 
 export class InnateToolHub implements IHub {
 
   private readonly registry = new Map<string, InnateTool>();
+  private _userInputResolver?: (input: string) => void;
+  private _userInputPromise?: Promise<string>;
+  private _eventPublisher?: IEventPublisher;
+  private _userProvidedContext: string[] = [];
 
-  /**
-   * 注册一个天生工具。
-   * 工具名必须唯一，重复注册会抛出错误。
-   */
+  setEventPublisher(publisher: IEventPublisher): void {
+    this._eventPublisher = publisher;
+  }
+
+  getUserProvidedContext(): string[] {
+    return this._userProvidedContext;
+  }
+
+  requestUserInput(question: string): Promise<string> {
+    if (!this._userInputPromise) {
+      this._userInputPromise = new Promise((resolve) => {
+        this._userInputResolver = resolve;
+      });
+    }
+    this._eventPublisher?.publish('user:input-request', { question });
+    return this._userInputPromise;
+  }
+
+  provideUserInput(input: string): void {
+    this._userProvidedContext.push(input);
+    if (this._userInputResolver) {
+      this._userInputResolver(input);
+      this._userInputResolver = undefined;
+      this._userInputPromise = undefined;
+    }
+  }
+
   register(tool: InnateTool): this {
     const toolName = tool.definition.name;
     if (this.registry.has(toolName)) {
@@ -28,9 +48,6 @@ export class InnateToolHub implements IHub {
     return this;
   }
 
-  /**
-   * 批量注册天生工具。
-   */
   registerAll(tools: InnateTool[]): this {
     for (const tool of tools) {
       this.register(tool);
@@ -38,9 +55,6 @@ export class InnateToolHub implements IHub {
     return this;
   }
 
-  /**
-   * 注销一个天生工具。
-   */
   unregister(toolName: string): boolean {
     return this.registry.delete(toolName);
   }

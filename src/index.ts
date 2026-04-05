@@ -16,6 +16,7 @@ export { InnateToolHub } from './innate-tools/innate-tool-hub';
 export { SkillHub } from './skill/skill-hub';
 export { OpenAIClient } from './model/openai-client';
 export type { OpenAIClientOptions } from './model/openai-client';
+export { AskUserTool } from './innate-tools/ask-user-tool';
 
 // --- All types, enums & contracts ---
 export {
