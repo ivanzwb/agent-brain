@@ -5,6 +5,7 @@ import { AgentBrain } from '../../src/agent-brain';
 import { OpenAIClient } from '../../src/model/openai-client';
 import { SkillHubAdapter } from './skill-hub-adapter';
 import { MemoryHubAdapter } from './memory-hub-adapter';
+import { CronHubAdapter } from './cron-hub-adapter';
 import * as readline from 'readline';
 
 process.env.OPENAI_API_KEY = '';
@@ -42,6 +43,7 @@ let currentBrain: AgentBrain | null = null;
 let model: OpenAIClient;
 let memory: MemoryHubAdapter;
 let skills: SkillHubAdapter;
+let cron: CronHubAdapter;
 
 function promptInput(promptText: string): Promise<string> {
   return new Promise((resolve) => {
@@ -69,6 +71,7 @@ function runAgent(userInput: string): void {
     model,
     memory,
     skills,
+    cron,
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
       modelContextSize: 128_000,
@@ -148,6 +151,7 @@ async function main() {
   memory = new MemoryHubAdapter(mem);
   const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
   skills = new SkillHubAdapter(sf);
+  cron = new CronHubAdapter();
   model = new OpenAIClient({
     baseURL: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,

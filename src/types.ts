@@ -1,6 +1,7 @@
 import type { ToolDefinition } from './innate-tools/types';
 import { MemoryHub } from './memory/memory-hub';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
+import { CronHub } from './cron/cron-hub';
 import { SkillHub } from './skill/skill-hub';
 
 // ============================================================
@@ -326,6 +327,8 @@ export interface AgentBrainOptions {
   memory: MemoryHub;
   /** 知识库（可选，用于存储和检索结构化知识文档） */
   knowledge?: KnowledgeHub;
+  /** 定时任务中心（可选，用于调度和管理后台任务） */
+  cron?: CronHub;
   /** 技能中心（统一管理动态安装的技能包） */
   skills: SkillHub;
   config: AgentConfig;

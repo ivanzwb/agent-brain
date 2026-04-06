@@ -75,6 +75,14 @@ import {
   WebSearchTool,
   WebScrapeTool,
 } from './innate-tools/web-tool';
+import {
+  CronListTool,
+  CronAddTool,
+  CronDeleteTool,
+  CronPauseTool,
+  CronResumeTool,
+  CronRunNowTool,
+} from './cron/cron-tools';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -162,6 +170,17 @@ export class AgentBrain {
     this.innateToolHub.register(new HttpFetchHtmlTool());
     this.innateToolHub.register(new WebSearchTool());
     this.innateToolHub.register(new WebScrapeTool());
+
+    // 定时任务工具
+    const cronHub = opts.cron;
+    if (cronHub) {
+      this.innateToolHub.register(new CronListTool(cronHub));
+      this.innateToolHub.register(new CronAddTool(cronHub));
+      this.innateToolHub.register(new CronDeleteTool(cronHub));
+      this.innateToolHub.register(new CronPauseTool(cronHub));
+      this.innateToolHub.register(new CronResumeTool(cronHub));
+      this.innateToolHub.register(new CronRunNowTool(cronHub));
+    }
 
     this.eventPublisher = opts.eventPublisher;
     if (this.eventPublisher) {
