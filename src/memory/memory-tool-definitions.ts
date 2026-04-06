@@ -11,6 +11,10 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     parameters: {
       type: 'object',
       properties: {
+        conversationId: {
+          type: 'string',
+          description: 'Conversation ID to group messages from the same conversation for later compression',
+        },
         role: { 
           type: 'string', 
           description: 'Message role in the conversation: user (human), assistant (AI), or system (system message)',
@@ -21,7 +25,7 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
           description: 'The actual message content/text that was exchanged in the conversation' 
         },
       },
-      required: ['role', 'content'],
+      required: ['conversationId', 'role', 'content'],
       additionalProperties: false,
     },
   },

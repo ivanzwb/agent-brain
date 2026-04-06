@@ -46,10 +46,11 @@ export class ConversationTrackTool implements InnateTool {
   readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_track;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
+    const conversationId = args['conversationId'] as string;
     const role = args['role'] as string;
     const content = args['content'] as string;
-    await this.hub.conversation_track(role, content);
-    return JSON.stringify({ status: 'tracked' });
+    await this.hub.conversation_track(conversationId, role, content);
+    return JSON.stringify({ status: 'tracked', conversationId });
   }
 }
 

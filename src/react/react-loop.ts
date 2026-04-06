@@ -40,6 +40,8 @@ export interface ReactLoopDeps {
 }
 
 export interface ReactLoopContext {
+  /** 会话ID，用于跟踪消息属于哪个任务会话 */
+  conversationId: string;
   /** 外层传入的系统提示 + 认知阶段引导 */
   systemPrompt: string;
   /** PLAN 阶段产出的执行计划 */
@@ -55,13 +57,17 @@ export interface ReactLoopContext {
 export class ReactLoop {
   private readonly innateToolHub: InnateToolHub;
   private readonly skillHub: SkillHub;
+  private readonly memory?: MemoryHub;
+  private conversationId!: string;
 
   constructor(private readonly deps: ReactLoopDeps) {
     this.innateToolHub = deps.innateToolHub;
     this.skillHub = deps.skillHub;
+    this.memory = deps.memory;
   }
 
   async run(ctx: ReactLoopContext): Promise<ExecuteResult> {
+    this.conversationId = ctx.conversationId;
     const { controller, eventPublisher } = this.deps;
     const allSteps: StepLog[] = [];
     const planStepResults: PlanStepResult[] = [];
@@ -210,9 +216,14 @@ export class ReactLoop {
       // ---- OBSERVATION ----
       // 天生工具优先，找不到则尝试技能工具
       let observation: string;
+      const isAskUser = call.name === 'ask_user';
       if (this.innateToolHub.hasTool(call.name)) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
+          if (isAskUser && this.memory) {
+            const userResponse = call.arguments['question'] + ' -> ' + observation;
+            await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
+          }
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const skillName: string = call.arguments['skillName'] as string;
             skillTools = this.skillHub.getTools(skillName);
@@ -230,6 +241,13 @@ export class ReactLoop {
           observation = `[Error] Tool execution failed: ${String(err)}`;
         }
       }
+
+      // Track assistant's action and observation to conversation
+      if (this.memory) {
+        await this.memory.conversation_track(this.conversationId!, 'assistant', `${call.name}: ${JSON.stringify(call.arguments)}`);
+        await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation.substring(0, 500)}`);
+      }
+
       steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));
       messages.push({ role: 'tool', content: observation, toolCallId: call.id });
       eventPublisher?.publish('step:observation', { step: controller.currentStep, content: observation });

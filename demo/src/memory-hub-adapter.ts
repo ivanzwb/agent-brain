@@ -18,7 +18,7 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
     return toolName in ALL_KNOWLEDGE_TOOL_DEFINITIONS || toolName in ALL_MEMORY_TOOL_DEFINITIONS;
   }
 
-  async conversation_track(role: string, content: string): Promise<void> {
+  async conversation_track(conversationId: string, role: string, content: string): Promise<void> {
     await this.mem.appendMessage(role as 'user' | 'assistant', content);
   }
 

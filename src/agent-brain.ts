@@ -217,7 +217,7 @@ export class AgentBrain {
     const tracker = new TokenTracker(this.model);
 
     this.emit('task:start', { taskId, userInput });
-    await this.memory.conversation_track('user', userInput);
+    await this.memory.conversation_track(taskId, 'user', userInput);
 
     try {
       // ---- 记忆检索：在理解任务前先回忆相关经验 ----
@@ -258,7 +258,7 @@ export class AgentBrain {
         this.emit('phase:plan', { taskId, plan, replanCount });
 
         // Phase 4: EXECUTE
-        executeResult = await this.execute(assessment, plan, tracker, userContext);
+        executeResult = await this.execute(taskId, assessment, plan, tracker, userContext);
         this.emit('phase:execute', { taskId, result: executeResult });
 
         // Phase 5: REFLECT
@@ -269,6 +269,11 @@ export class AgentBrain {
 
         replanCount++;
         this.emit('phase:replan', { taskId, replanCount });
+      }
+
+      const finalAnswer = executeResult!.finalAnswer;
+      if (finalAnswer) {
+        await this.memory.conversation_track(taskId, 'assistant', finalAnswer);
       }
 
       return this.buildTaskResult(taskId, startTime, tracker, {
@@ -412,6 +417,7 @@ export class AgentBrain {
   // ===========================================================
 
   private async execute(
+    conversationId: string,
     assessment: Assessment,
     plan: Plan,
     tracker: TokenTracker,
@@ -437,6 +443,7 @@ export class AgentBrain {
     });
 
     return loop.run({
+      conversationId,
       systemPrompt: this.config.systemPrompt,
       plan,
       assessment,

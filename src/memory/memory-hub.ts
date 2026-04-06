@@ -13,10 +13,11 @@ export interface MemoryHub extends IHub {
 
     /**
      * 跟踪对话消息，存入短期记忆
+     * @param conversationId 会话ID（用于标记同一对话，便于后续压缩）
      * @param role 消息角色：'user' | 'assistant' | 'system'
      * @param content 消息内容
      */
-    conversation_track(role: string, content: string): Promise<void>;
+    conversation_track(conversationId: string, role: string, content: string): Promise<void>;
 
     /**
      * 搜索短期记忆（当前会话历史）
