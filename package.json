@@ -1,7 +1,7 @@
 {
   "name": "@biosbot/agent-brain",
   "version": "0.0.1",
-  "description": "Agent ReAct framework with cognitive planning engine — five-phase cognitive cycle with per-step ReAct loops",
+  "description": "Agent ReAct framework with cognitive planning engine — five-phase cognitive cycle (PERCEIVE→ASSESS→PLAN→EXECUTE→REFLECT) with nested ReAct loops, dynamic skill acquisition, and interactive user input support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -27,7 +27,14 @@
     "openai",
     "tool-calling",
     "function-calling",
-    "typescript"
+    "typescript",
+    "autonomous-agent",
+    "reAct",
+    "chain-of-thought",
+    "task-automation",
+    "ai-agent",
+    "chatgpt",
+    "gpt-4"
   ],
   "license": "MIT",
   "repository": {
