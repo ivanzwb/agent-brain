@@ -61,6 +61,13 @@ import {
   FSSearchTool,
   FSGrepTool,
 } from './innate-tools/file-system-tool';
+import {
+  CmdExecTool,
+  CmdRunTool,
+  CmdKillTool,
+  CmdBgTool,
+  CmdListTool,
+} from './innate-tools/command-tool';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -134,6 +141,13 @@ export class AgentBrain {
     this.innateToolHub.register(new FSStatTool());
     this.innateToolHub.register(new FSSearchTool());
     this.innateToolHub.register(new FSGrepTool());
+
+    // 命令执行工具
+    this.innateToolHub.register(new CmdExecTool());
+    this.innateToolHub.register(new CmdRunTool());
+    this.innateToolHub.register(new CmdKillTool());
+    this.innateToolHub.register(new CmdBgTool());
+    this.innateToolHub.register(new CmdListTool());
 
     this.eventPublisher = opts.eventPublisher;
     if (this.eventPublisher) {
