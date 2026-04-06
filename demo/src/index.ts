@@ -1,4 +1,5 @@
-import { createMemory, AgentMemory } from '@biosbot/agent-memory';
+import { createMemory, type EmbeddingProvider } from '@biosbot/agent-memory';
+import { OpenAI } from 'openai';
 import { SkillFramework } from '@biosbot/agent-skills';
 import { AgentBrain } from '../../src/agent-brain';
 import { OpenAIClient } from '../../src/model/openai-client';
@@ -11,6 +12,22 @@ process.env.OPENAI_BASE_URL = '';
 process.env.OPENAI_MODEL = '';
 process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
 process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL,
+});
+
+const embeddingProvider: EmbeddingProvider = {
+  dimensions: 1536,
+  async embed(text: string): Promise<number[]> {
+    const resp = await openai.embeddings.create({
+      model: 'text-embedding-v1',
+      input: text,
+    });
+    return resp.data[0].embedding;
+  },
+};
 
 type CLIState = 'idle' | 'waiting-task' | 'processing' | 'waiting-user-input';
 
@@ -68,7 +85,7 @@ function runAgent(userInput: string): void {
           });
         }
         if (['task:start', 'phase:perceive', 'phase:assess', 'phase:plan', 'phase:execute', 'phase:reflect'].includes(type)) {
-          console.log(`\n[${type}]`);
+          console.log(`\n[${type}]: ${JSON.stringify(payload)}`);
         }
       },
     },
@@ -111,7 +128,6 @@ async function askTask() {
     isRunning = false;
     rl.close();
     process.exit(0);
-    return;
   }
   
   console.log(`\n🚀 开始处理: "${input}"\n`);
@@ -125,7 +141,10 @@ async function main() {
   console.log('输入您的请求，按 Enter 发送');
   console.log('输入 :exit 或按 Ctrl+C 退出\n');
 
-  const mem = await createMemory({ dataDir: process.env.MEMORY_DATA_DIR });
+  const mem = await createMemory({
+    dataDir: process.env.MEMORY_DATA_DIR,
+    embedding: embeddingProvider,
+  });
   memory = new MemoryHubAdapter(mem);
   const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
   skills = new SkillHubAdapter(sf);

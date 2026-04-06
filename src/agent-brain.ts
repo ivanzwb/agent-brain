@@ -49,6 +49,18 @@ import {
   KnowledgeReadTool,
 } from './knowledge/knowledge-tools';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
+import {
+  FSReadTool,
+  FSWriteTool,
+  FSEditTool,
+  FSDeleteTool,
+  FSListTool,
+  FSMkdirTool,
+  FSExistsTool,
+  FSStatTool,
+  FSSearchTool,
+  FSGrepTool,
+} from './innate-tools/file-system-tool';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -110,6 +122,18 @@ export class AgentBrain {
     this.innateToolHub.register(new SkillListToolsTool(this.skillHub));
 
     this.innateToolHub.register(new AskUserTool(this.innateToolHub));
+
+    // 文件系统工具
+    this.innateToolHub.register(new FSReadTool());
+    this.innateToolHub.register(new FSWriteTool());
+    this.innateToolHub.register(new FSEditTool());
+    this.innateToolHub.register(new FSDeleteTool());
+    this.innateToolHub.register(new FSListTool());
+    this.innateToolHub.register(new FSMkdirTool());
+    this.innateToolHub.register(new FSExistsTool());
+    this.innateToolHub.register(new FSStatTool());
+    this.innateToolHub.register(new FSSearchTool());
+    this.innateToolHub.register(new FSGrepTool());
 
     this.eventPublisher = opts.eventPublisher;
     if (this.eventPublisher) {
