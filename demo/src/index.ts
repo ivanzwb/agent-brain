@@ -1,11 +1,14 @@
+import { createMemory, AgentMemory } from '@biosbot/agent-memory';
 import { SkillFramework } from '@biosbot/agent-skills';
 import { AgentBrain } from '../../src/agent-brain';
 import { OpenAIClient } from '../../src/model/openai-client';
 import { SkillHubAdapter } from './skill-hub-adapter';
-import { MockMemoryHubAdapter } from './mock-memory-hub-adapter';
+import { MemoryHubAdapter } from './memory-hub-adapter';
 import * as readline from 'readline';
 
-
+process.env.OPENAI_API_KEY = '';
+process.env.OPENAI_BASE_URL = '';
+process.env.OPENAI_MODEL = '';
 process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
 process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
 
@@ -19,22 +22,9 @@ const rl = readline.createInterface({
 let isRunning = true;
 let state: CLIState = 'idle';
 let currentBrain: AgentBrain | null = null;
-
-const memory = new MockMemoryHubAdapter();
-const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
-const skills = new SkillHubAdapter(sf);
-const model = new OpenAIClient({
-  baseURL: process.env.OPENAI_BASE_URL,
-  apiKey: process.env.OPENAI_API_KEY,
-  model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-  temperature: 0.1,
-});
-
-console.log('\n' + '='.repeat(60));
-console.log('🧠 AgentBrain 交互式 CLI');
-console.log('='.repeat(60));
-console.log('输入您的请求，按 Enter 发送');
-console.log('输入 :exit 或按 Ctrl+C 退出\n');
+let model: OpenAIClient;
+let memory: MemoryHubAdapter;
+let skills: SkillHubAdapter;
 
 function promptInput(promptText: string): Promise<string> {
   return new Promise((resolve) => {
@@ -128,15 +118,36 @@ async function askTask() {
   runAgent(input);
 }
 
-process.on('SIGINT', () => {
-  isRunning = false;
-  console.log('\n\n👋 再见!');
-  rl.close();
-  process.exit(0);
-});
+async function main() {
+  console.log('\n' + '='.repeat(60));
+  console.log('🧠 AgentBrain 交互式 CLI');
+  console.log('='.repeat(60));
+  console.log('输入您的请求，按 Enter 发送');
+  console.log('输入 :exit 或按 Ctrl+C 退出\n');
 
-rl.on('close', () => {
-  isRunning = false;
-});
+  const mem = await createMemory({ dataDir: process.env.MEMORY_DATA_DIR });
+  memory = new MemoryHubAdapter(mem);
+  const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
+  skills = new SkillHubAdapter(sf);
+  model = new OpenAIClient({
+    baseURL: process.env.OPENAI_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY,
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    temperature: 0.1,
+  });
 
-askTask();
+  process.on('SIGINT', () => {
+    isRunning = false;
+    console.log('\n\n👋 再见!');
+    rl.close();
+    process.exit(0);
+  });
+
+  rl.on('close', () => {
+    isRunning = false;
+  });
+
+  askTask();
+}
+
+main().catch(console.error);

@@ -124,8 +124,9 @@ export class ReactLoop {
     if (memory) {
       try {
         const memoryQuery = `${ctx.plan.strategy} ${planStep.description}`;
-        const result = await memory.searchMemory(memoryQuery);
-        memoryText = result.text;
+        const result = await memory.memory_search({ query: memoryQuery, topK: 3 });
+        const data = JSON.parse(result);
+        memoryText = data.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
       } catch {
         // 记忆检索失败不应阻塞执行
       }

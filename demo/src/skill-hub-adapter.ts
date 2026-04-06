@@ -2,75 +2,74 @@ import type { SkillFramework, ToolDeclaration } from '@biosbot/agent-skills';
 import type { ToolDefinition } from '../../src/innate-tools/types';
 import type { SkillHub } from '../../src/skill/skill-hub';
 
-// ============================================================
-// SkillHubAdapter — 将 agent-skills (SkillFramework) 适配为 SkillHub 接口
-//
-// 映射关系：
-//   SkillHub.getSkillsDescription()    → sf.listSkills()
-//   SkillHub.getTools(skillName)       → sf.getSkillToolDeclarations(skillName)
-//   SkillHub.execute(skill, tool, args)→ sf 暂无 runScript，返回工具声明信息
-//   IHub.getToolDefinition(toolName)   → sf.getFrameworkToolDeclarations() 查找
-//   IHub.hasTool(toolName)             → 同上
-//
-// HubTool 桥接方法（通过同名方法调用）：
-//   skill_list / skill_install / skill_load_main /
-//   skill_load_reference / skill_list_tools
-// ============================================================
+const FRAMEWORK_TOOL_DECLARATIONS: ToolDefinition[] = [
+  {
+    name: 'skill_list',
+    description: 'List all installed skills. Returns a list of available skills with their names and descriptions.',
+    parameters: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'skill_install',
+    description: 'Install a new skill from a source (URL, npm package, or local path).',
+    parameters: {
+      type: 'object',
+      properties: { source: { type: 'string', description: 'Source of the skill to install' } },
+      required: ['source'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'skill_load_main',
+    description: 'Load the main context file (main.md) of a skill.',
+    parameters: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'Name of the skill' } },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'skill_load_reference',
+    description: 'Load a reference file from a skill\'s reference directory.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the skill' },
+        referencePath: { type: 'string', description: 'Relative path to the reference file' },
+      },
+      required: ['name', 'referencePath'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'skill_list_tools',
+    description: 'List all tools provided by a specific skill.',
+    parameters: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'Name of the skill' } },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+];
 
 export class SkillHubAdapter implements SkillHub {
-  /** 框架级工具定义缓存（skill_list, skill_install 等） */
-  private frameworkToolMap: Map<string, ToolDefinition>;
+  private toolMap: Map<string, ToolDefinition>;
 
   constructor(private readonly sf: SkillFramework) {
-    this.frameworkToolMap = this.buildFrameworkToolMap();
+    this.toolMap = new Map(FRAMEWORK_TOOL_DECLARATIONS.map(d => [d.name, d]));
   }
 
-  // ----- IHub -----
-
   getToolDefinition(toolName: string): ToolDefinition | undefined {
-    return this.frameworkToolMap.get(toolName);
+    return this.toolMap.get(toolName);
   }
 
   hasTool(toolName: string): boolean {
-    return this.frameworkToolMap.has(toolName);
+    return this.toolMap.has(toolName);
   }
-
-  // ----- SkillHub -----
-
-  getSkillsDescription(): string[] {
-    const { skills } = this.sf.listSkills();
-    return skills.map(s => `${s.name}: ${s.description}`);
-  }
-
-  getTools(skillName: string): ToolDefinition[] {
-    try {
-      const decls = this.sf.getSkillToolDeclarations(skillName);
-      return decls.map(d => this.toToolDefinition(d));
-    } catch {
-      return [];
-    }
-  }
-
-  async execute(skillName: string, toolName: string, _args: Record<string, unknown>): Promise<string> {
-    // 当前版本 agent-skills 尚无 runScript API，
-    // 返回工具声明信息供 LLM 参考
-    const tools = this.sf.listTools(skillName);
-    const tool = tools.find(t => t.name === toolName);
-    if (!tool) {
-      throw new Error(`Skill "${skillName}" has no tool "${toolName}"`);
-    }
-    return JSON.stringify({
-      message: `Tool "${toolName}" from skill "${skillName}" is declared but script execution is not yet available in this agent-skills version.`,
-      tool,
-    });
-  }
-
-  // ----- HubTool 桥接方法 -----
-  // AgentBrain 通过 HubTool 注册这些名字，HubTool.execute 会调用 (this as any)[toolName](args)
 
   async skill_list(_args: Record<string, unknown>): Promise<string> {
-    const result = this.sf.listSkills();
-    return JSON.stringify(result);
+    return JSON.stringify(this.sf.listSkills());
   }
 
   async skill_install(args: Record<string, unknown>): Promise<string> {
@@ -81,32 +80,43 @@ export class SkillHubAdapter implements SkillHub {
 
   async skill_load_main(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
-    const main = this.sf.loadMain(name);
-    return JSON.stringify(main);
+    return JSON.stringify(this.sf.loadMain(name));
   }
 
   async skill_load_reference(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
     const referencePath = args['referencePath'] as string;
-    const ref = this.sf.loadReference(name, referencePath);
-    return JSON.stringify(ref);
+    return JSON.stringify(this.sf.loadReference(name, referencePath));
   }
 
   async skill_list_tools(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
-    const tools = this.sf.listTools(name);
-    return JSON.stringify({ skillName: name, tools });
+    return JSON.stringify({ skillName: name, tools: this.sf.listTools(name) });
   }
 
-  // ----- private -----
+  getSkillsDescription(): string[] {
+    const { skills } = this.sf.listSkills();
+    return skills.map(s => `${s.name}: ${s.description}`);
+  }
 
-  private buildFrameworkToolMap(): Map<string, ToolDefinition> {
-    const decls = this.sf.getFrameworkToolDeclarations();
-    const map = new Map<string, ToolDefinition>();
-    for (const d of decls) {
-      map.set(d.name, this.toToolDefinition(d));
+  getTools(skillName: string): ToolDefinition[] {
+    try {
+      return this.sf.getSkillToolDeclarations(skillName).map(d => this.toToolDefinition(d));
+    } catch {
+      return [];
     }
-    return map;
+  }
+
+  async execute(skillName: string, toolName: string, _args: Record<string, unknown>): Promise<string> {
+    const tools = this.sf.listTools(skillName);
+    const tool = tools.find(t => t.name === toolName);
+    if (!tool) {
+      throw new Error(`Skill "${skillName}" has no tool "${toolName}"`);
+    }
+    return JSON.stringify({
+      message: `Tool "${toolName}" from skill "${skillName}" is declared but script execution is not yet available.`,
+      tool,
+    });
   }
 
   private toToolDefinition(decl: ToolDeclaration): ToolDefinition {

@@ -22,9 +22,33 @@ import { TokenTracker } from './token/token-tracker';
 import { PromptBudget } from './token/prompt-budget';
 import { SkillHub } from './skill/skill-hub';
 import { InnateToolHub } from './innate-tools/innate-tool-hub';
-import { HubTool } from './hub-tool';
 import { MemoryHub } from './memory/memory-hub';
 import { AskUserTool } from './innate-tools/ask-user-tool';
+import {
+  SkillListTool,
+  SkillInstallTool,
+  SkillLoadMainTool,
+  SkillLoadReferenceTool,
+  SkillListToolsTool,
+} from './skill/skill-tools';
+import {
+  MemorySearchTool,
+  MemorySaveTool,
+  MemoryListTool,
+  MemoryDeleteTool,
+  MemoryGetHistoryTool,
+  ConversationTrackTool,
+  ConversationSearchTool,
+  ConversationCompressTool
+} from './memory/memory-tools';
+import {
+  KnowledgeListTool,
+  KnowledgeAddTool,
+  KnowledgeDeleteTool,
+  KnowledgeSearchTool,
+  KnowledgeReadTool,
+} from './knowledge/knowledge-tools';
+import { KnowledgeHub } from './knowledge/knowledge-hub';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -44,6 +68,7 @@ function generateTaskId(): string {
 export class AgentBrain {
   private readonly model: IModelClient;
   private readonly memory: MemoryHub;
+  private readonly knowledge?: KnowledgeHub;
 
   private readonly innateToolHub: InnateToolHub;
   private readonly skillHub: SkillHub;
@@ -58,20 +83,32 @@ export class AgentBrain {
 
     this.innateToolHub = new InnateToolHub();
 
-    this.skillHub = opts.skills;
-    // 将skills 查找，安装，使用（渐进式加载）作为天生的能力，注册到innateToolHub中，供执行阶段调用
-    this.innateToolHub.register(new HubTool(this.skillHub, 'skill_list'));
-    this.innateToolHub.register(new HubTool(this.skillHub, 'skill_install'));
-    this.innateToolHub.register(new HubTool(this.skillHub, 'skill_load_main'));
-    this.innateToolHub.register(new HubTool(this.skillHub, 'skill_load_reference'));
-    this.innateToolHub.register(new HubTool(this.skillHub, 'skill_list_tools'));
-
     this.memory = opts.memory;
-    // 将知识库的查询作为天生工具注册，供执行阶段调用
-    this.innateToolHub.register(new HubTool(this.memory, 'knowledge_search'));
-    this.innateToolHub.register(new HubTool(this.memory, 'knowledge_read'));
+    this.innateToolHub.register(new ConversationTrackTool(this.memory));
+    this.innateToolHub.register(new ConversationSearchTool(this.memory));
+    this.innateToolHub.register(new ConversationCompressTool(this.memory));
+    this.innateToolHub.register(new MemorySearchTool(this.memory));
+    this.innateToolHub.register(new MemorySaveTool(this.memory));
+    this.innateToolHub.register(new MemoryListTool(this.memory));
+    this.innateToolHub.register(new MemoryDeleteTool(this.memory));
+    this.innateToolHub.register(new MemoryGetHistoryTool(this.memory));
 
-    // 注册 ask_user 工具，用于请求用户输入
+    this.knowledge = opts.knowledge;
+    if(this.knowledge) {
+      this.innateToolHub.register(new KnowledgeListTool(this.knowledge));
+      this.innateToolHub.register(new KnowledgeAddTool(this.knowledge));
+      this.innateToolHub.register(new KnowledgeDeleteTool(this.knowledge));
+      this.innateToolHub.register(new KnowledgeSearchTool(this.knowledge));
+      this.innateToolHub.register(new KnowledgeReadTool(this.knowledge));
+    }
+
+    this.skillHub = opts.skills;
+    this.innateToolHub.register(new SkillListTool(this.skillHub));
+    this.innateToolHub.register(new SkillInstallTool(this.skillHub));
+    this.innateToolHub.register(new SkillLoadMainTool(this.skillHub));
+    this.innateToolHub.register(new SkillLoadReferenceTool(this.skillHub));
+    this.innateToolHub.register(new SkillListToolsTool(this.skillHub));
+
     this.innateToolHub.register(new AskUserTool(this.innateToolHub));
 
     this.eventPublisher = opts.eventPublisher;
@@ -109,11 +146,13 @@ export class AgentBrain {
     const tracker = new TokenTracker(this.model);
 
     this.emit('task:start', { taskId, userInput });
-    await this.memory.trackMessage('user', userInput);
+    await this.memory.conversation_track('user', userInput);
 
     try {
       // ---- 记忆检索：在理解任务前先回忆相关经验 ----
-      const { text: memory } = await this.memory.searchMemory(userInput);
+      const memoryResult = await this.memory.memory_search({ query: userInput, topK: 3 });
+      const memoryData = JSON.parse(memoryResult);
+      const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
 
       // ---- Phase 1: PERCEIVE ----
       const perception = await this.perceive(userInput, memory, tracker);

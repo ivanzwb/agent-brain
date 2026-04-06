@@ -9,14 +9,14 @@ export { AgentBrain } from './agent-brain';
 export { ReactLoop } from './react/react-loop';
 export type { ReactLoopDeps, ReactLoopContext } from './react/react-loop';
 export { LoopController } from './react/loop-controller';
-export { ThinkingModeScheduler } from './thinking-mode';
-export { TokenTracker } from './token/token-tracker';
-export { PromptBudget } from './token/prompt-budget';
-export { InnateToolHub } from './innate-tools/innate-tool-hub';
 export { SkillHub } from './skill/skill-hub';
 export { OpenAIClient } from './model/openai-client';
 export type { OpenAIClientOptions } from './model/openai-client';
 export { AskUserTool } from './innate-tools/ask-user-tool';
+export { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge/knowledge-tool-definitions';
+export { MEMORY_TOOL_DEFINITIONS, CONVERSATION_TOOL_DEFINITIONS } from './memory/memory-tool-definitions';
+export { MemoryHub } from './memory/memory-hub';
+export { KnowledgeHub } from './knowledge/knowledge-hub';
 
 // --- All types, enums & contracts ---
 export {
@@ -26,8 +26,6 @@ export {
   TaskStatus,
   ThinkingMode,
   TerminationReason,
-  // Config
-  resolveConfig,
 } from './types';
 
 export type {

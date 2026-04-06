@@ -1,5 +1,6 @@
 import type { ToolDefinition } from './innate-tools/types';
 import { MemoryHub } from './memory/memory-hub';
+import { KnowledgeHub } from './knowledge/knowledge-hub';
 import { SkillHub } from './skill/skill-hub';
 
 // ============================================================
@@ -76,6 +77,7 @@ export enum TerminationReason {
 
 export type { ToolDefinition } from './innate-tools/types';
 export type { InnateTool } from './innate-tools/types';
+export { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge/knowledge-tool-definitions';
 
 export interface ToolCallIntent {
   id?: string;
@@ -322,6 +324,8 @@ export interface IEventPublisher {
 export interface AgentBrainOptions {
   model: IModelClient;
   memory: MemoryHub;
+  /** 知识库（可选，用于存储和检索结构化知识文档） */
+  knowledge?: KnowledgeHub;
   /** 技能中心（统一管理动态安装的技能包） */
   skills: SkillHub;
   config: AgentConfig;

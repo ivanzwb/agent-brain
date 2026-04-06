@@ -116,10 +116,22 @@ The framework dynamically adjusts thinking mode weights for each cognitive phase
 
 ### Skills and Tools
 
-- **Innate Tools**: Built-in capabilities (skill management, knowledge search)
+- **Innate Tools**: Built-in capabilities (skill management, knowledge CRUD)
 - **Skill Packages**: Domain-specific tools loaded on-demand
 
 The agent can dynamically acquire new skills during execution using innate tools like `skill_install` and `skill_load_main`.
+
+### Knowledge Base Operations
+
+The framework provides 5 knowledge base operations as innate tools:
+
+| Tool | Description |
+|------|-------------|
+| `knowledge_list` | List all entries with filtering (category, limit, offset) |
+| `knowledge_add` | Add new entry (title, content, category, tags, metadata) |
+| `knowledge_delete` | Delete entry by ID (supports soft/hard delete) |
+| `knowledge_search` | Semantic search (query, topK, category, tags, threshold) |
+| `knowledge_read` | Read full entry content by ID |
 
 ### User Input During Execution
 

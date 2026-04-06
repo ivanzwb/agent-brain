@@ -10,6 +10,16 @@ import type { ToolDefinition } from '../innate-tools/types';
 // ============================================================
 
 export interface SkillHub extends IHub {
+    /** 列出所有已安装的技能 */
+    skill_list(args: Record<string, unknown>): Promise<string>;
+    /** 安装新技能 */
+    skill_install(args: Record<string, unknown>): Promise<string>;
+    /** 加载技能的主上下文 */
+    skill_load_main(args: Record<string, unknown>): Promise<string>;
+    /** 加载技能的参考文件 */
+    skill_load_reference(args: Record<string, unknown>): Promise<string>;
+    /** 列出技能提供的工具 */
+    skill_list_tools(args: Record<string, unknown>): Promise<string>;
     /** 返回所有已安装技能的描述文本列表 */
     getSkillsDescription(): string[];
     /** 返回所有已安装技能提供的工具定义 */
