@@ -68,6 +68,13 @@ import {
   CmdBgTool,
   CmdListTool,
 } from './innate-tools/command-tool';
+import {
+  HttpGetTool,
+  HttpPostTool,
+  HttpFetchHtmlTool,
+  WebSearchTool,
+  WebScrapeTool,
+} from './innate-tools/web-tool';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -148,6 +155,13 @@ export class AgentBrain {
     this.innateToolHub.register(new CmdKillTool());
     this.innateToolHub.register(new CmdBgTool());
     this.innateToolHub.register(new CmdListTool());
+
+    // 网络工具
+    this.innateToolHub.register(new HttpGetTool());
+    this.innateToolHub.register(new HttpPostTool());
+    this.innateToolHub.register(new HttpFetchHtmlTool());
+    this.innateToolHub.register(new WebSearchTool());
+    this.innateToolHub.register(new WebScrapeTool());
 
     this.eventPublisher = opts.eventPublisher;
     if (this.eventPublisher) {
