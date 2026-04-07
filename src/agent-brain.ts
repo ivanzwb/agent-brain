@@ -84,6 +84,7 @@ import {
   CronResumeTool,
   CronRunNowTool,
 } from './cron/cron-tools';
+import { SecuritySandbox } from './sandbox/security-sandbox';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -111,12 +112,27 @@ export class AgentBrain {
   private readonly eventPublisher?: IEventPublisher;
   private readonly scheduler = new ThinkingModeScheduler();
   private readonly budget: PromptBudget;
+  private readonly sandbox: SecuritySandbox;
 
   constructor(opts: AgentBrainOptions) {
     this.config = resolveConfig(opts.config);
     this.model = opts.model;
 
     this.innateToolHub = new InnateToolHub();
+
+    // Security sandbox
+    this.sandbox = new SecuritySandbox(opts.sandbox);
+    // Wire ASK handler through the innate tool hub's ask_user mechanism
+    this.sandbox.setAskHandler(async (request) => {
+      const question =
+        `[Security Sandbox] Permission required:\n` +
+        `  Action: ${request.action}\n` +
+        `  Target: ${request.target}\n` +
+        (request.detail ? `  Detail: ${request.detail}\n` : '') +
+        `\nAllow this action? (yes/no)`;
+      const answer = await this.innateToolHub.requestUserInput(question);
+      return /^(y|yes|allow|ok|确认|允许|是)$/i.test(answer.trim());
+    });
 
     this.memory = opts.memory;
     this.innateToolHub.register(new ConversationTrackTool(this.memory));
@@ -439,6 +455,7 @@ export class AgentBrain {
       memory: this.memory,
       innateToolHub: this.innateToolHub,
       skillHub: this.skillHub,
+      sandbox: this.sandbox,
       eventPublisher: this.eventPublisher,
       budget: this.budget,
       tracker,

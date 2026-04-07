@@ -174,6 +174,8 @@ async function fetchUrl(url: string, options: RequestInit & { timeout?: number }
 
 export class HttpGetTool implements InnateTool {
   readonly definition: ToolDefinition = WEB_TOOL_DEFINITIONS.http_get;
+  readonly actionCategory = 'web_fetch' as const;
+  readonly permissionTargetArgs = ['url'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args['url'] as string;
@@ -207,6 +209,8 @@ export class HttpGetTool implements InnateTool {
 
 export class HttpPostTool implements InnateTool {
   readonly definition: ToolDefinition = WEB_TOOL_DEFINITIONS.http_post;
+  readonly actionCategory = 'web_fetch' as const;
+  readonly permissionTargetArgs = ['url'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args['url'] as string;
@@ -242,6 +246,8 @@ export class HttpPostTool implements InnateTool {
 
 export class HttpFetchHtmlTool implements InnateTool {
   readonly definition: ToolDefinition = WEB_TOOL_DEFINITIONS.http_fetch_html;
+  readonly actionCategory = 'web_fetch' as const;
+  readonly permissionTargetArgs = ['url'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args['url'] as string;
@@ -314,6 +320,8 @@ export class HttpFetchHtmlTool implements InnateTool {
 
 export class WebSearchTool implements InnateTool {
   readonly definition: ToolDefinition = WEB_TOOL_DEFINITIONS.web_search;
+  readonly actionCategory = 'web_search' as const;
+  readonly permissionTargetArgs = ['query'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const query = args['query'] as string;
@@ -388,6 +396,8 @@ export class WebSearchTool implements InnateTool {
 
 export class WebScrapeTool implements InnateTool {
   readonly definition: ToolDefinition = WEB_TOOL_DEFINITIONS.web_scrape;
+  readonly actionCategory = 'web_fetch' as const;
+  readonly permissionTargetArgs = ['url'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args['url'] as string;

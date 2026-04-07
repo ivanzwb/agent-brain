@@ -21,6 +21,7 @@ import { PromptBudget } from '../token/prompt-budget';
 import { MemoryHub } from '../memory/memory-hub';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
+import type { SecuritySandbox, ActionCategory } from '../sandbox/security-sandbox';
 
 // ============================================================
 // ReactLoop — Inner loop (Thought→Action→Observation) within EXECUTE phase
@@ -29,11 +30,13 @@ import type { SkillHub } from '../skill/skill-hub';
 export interface ReactLoopDeps {
   controller: LoopController;
   model: IModelClient;
-  memory?: MemoryHub;
+  memory: MemoryHub;
   /** Innate tool provider (system-built, fixed) */
   innateToolHub: InnateToolHub;
   /** Skill hub (pre-installed skills, no dynamic installation) */
   skillHub: SkillHub;
+  /** Security sandbox for permission checks before tool execution */
+  sandbox?: SecuritySandbox;
   budget: PromptBudget;
   eventPublisher?: IEventPublisher;
   tracker: TokenTracker;
@@ -57,13 +60,15 @@ export interface ReactLoopContext {
 export class ReactLoop {
   private readonly innateToolHub: InnateToolHub;
   private readonly skillHub: SkillHub;
-  private readonly memory?: MemoryHub;
+  private readonly memory: MemoryHub;
+  private readonly sandbox?: SecuritySandbox;
   private conversationId!: string;
 
   constructor(private readonly deps: ReactLoopDeps) {
     this.innateToolHub = deps.innateToolHub;
     this.skillHub = deps.skillHub;
     this.memory = deps.memory;
+    this.sandbox = deps.sandbox;
   }
 
   async run(ctx: ReactLoopContext): Promise<ExecuteResult> {
@@ -214,16 +219,32 @@ export class ReactLoop {
       eventPublisher?.publish('step:action', { step: controller.currentStep, tool: call.name, args: call.arguments });
 
       // ---- OBSERVATION ----
-      // Innate tools first, fall back to skill tools if not found
+      // Sandbox permission check before any tool execution
       let observation: string;
-      const isAskUser = call.name === 'ask_user';
+      const isDefaultAllowToolCall = call.name === 'ask_user'
+      || call.name.startsWith('conversation_')
+      || call.name.startsWith('memory_')
+      || call.name.startsWith('knowledge_')
+      || call.name.startsWith('skill_')
+      || call.name.startsWith('cron_');
+
+      if (this.sandbox && !isDefaultAllowToolCall) {
+        const sandboxResult = await this.checkSandboxPermission(call.name, call.arguments);
+        if (sandboxResult) {
+          observation = sandboxResult;
+          steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));
+          messages.push({ role: 'tool', content: observation, toolCallId: call.id });
+          eventPublisher?.publish('step:observation', { step: controller.currentStep, content: observation });
+          continue;
+        }
+      }
+
+      // Innate tools first, fall back to skill tools if not found
       if (this.innateToolHub.hasTool(call.name)) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
-          if (isAskUser && this.memory) {
-            const userResponse = call.arguments['question'] + ' -> ' + observation;
-            await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
-          }
+          const userResponse = call.arguments['question'] + ' -> ' + observation;
+          await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const skillName: string = call.arguments['skillName'] as string;
             skillTools = this.skillHub.getTools(skillName);
@@ -255,6 +276,53 @@ export class ReactLoop {
   }
 
   // ----- private helpers -----
+
+  /**
+   * Check sandbox permission for a tool call.
+   * Returns a denial JSON string if blocked, or undefined if allowed.
+   */
+  private async checkSandboxPermission(
+    toolName: string,
+    args: Record<string, unknown>,
+  ): Promise<string | undefined> {
+    if (!this.sandbox) return undefined;
+
+    // Determine action category from the tool's self-declared metadata
+    const action: ActionCategory = this.innateToolHub.getActionCategory(toolName) ?? 'skill_exec';
+    const target = this.innateToolHub.hasTool(toolName)
+      ? this.innateToolHub.getPermissionTarget(toolName, args)
+      : `${(args['skillName'] as string) ?? ''}:${toolName}`;
+
+    // Resolve relative paths for fs tools
+    const resolvedTarget = action.startsWith('fs_')
+      ? this.sandbox.resolvePath(target)
+      : target;
+
+    const decision = await this.sandbox.checkPermission({
+      action,
+      target: resolvedTarget,
+      detail: `${toolName}: ${target}`,
+    });
+
+    if (!decision.allowed) {
+      return JSON.stringify({ status: 'denied', tool: toolName, target, reason: decision.reason });
+    }
+
+    // Inject sandbox working directory as default cwd for command tools
+    if (action.startsWith('cmd_') && !args['cwd']) {
+      args['cwd'] = this.sandbox.workingDirectory;
+    }
+
+    // Resolve fs paths so tools receive absolute paths
+    if (action.startsWith('fs_') && args['path']) {
+      args['path'] = resolvedTarget;
+    }
+    if (action.startsWith('fs_') && args['directory']) {
+      args['directory'] = this.sandbox.resolvePath(args['directory'] as string);
+    }
+
+    return undefined;
+  }
 
   /**
    * Collect outputs from prerequisite steps this step depends on, concatenate as context text.

@@ -3,6 +3,7 @@ import type {
   ToolDefinition,
 } from './types';
 import type { IHub, IEventPublisher } from '../types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 
 export class InnateToolHub implements IHub {
 
@@ -72,6 +73,23 @@ export class InnateToolHub implements IHub {
 
   getTools(): ToolDefinition[] {
     return Array.from(this.registry.values()).map(t => t.definition);
+  }
+
+  /** Get the sandbox action category for a tool. Returns undefined if the tool is exempt. */
+  getActionCategory(toolName: string): ActionCategory | undefined {
+    return this.registry.get(toolName)?.actionCategory;
+  }
+
+  /** Extract the permission target from tool args based on the tool's declared permissionTargetArgs. */
+  getPermissionTarget(toolName: string, args: Record<string, unknown>): string {
+    const tool = this.registry.get(toolName);
+    if (!tool?.permissionTargetArgs) return '*';
+    for (const key of tool.permissionTargetArgs) {
+      const val = args[key];
+      if (typeof val === 'string' && val) return val;
+      if (typeof val === 'number') return String(val);
+    }
+    return '*';
   }
 
   async execute(toolName: string, args: Record<string, unknown>): Promise<string> {

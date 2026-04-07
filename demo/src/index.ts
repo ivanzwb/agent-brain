@@ -11,6 +11,7 @@ import * as readline from 'readline';
 process.env.OPENAI_API_KEY = '';
 process.env.OPENAI_BASE_URL = '';
 process.env.OPENAI_MODEL = '';
+process.env.SANDBOX_DIR = process.env.SANDBOX_DIR ?? './sandbox-data';
 process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
 process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
 

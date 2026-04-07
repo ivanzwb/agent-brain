@@ -255,6 +255,8 @@ export { FS_TOOL_DEFINITIONS };
 
 export class FSReadTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_read;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -305,6 +307,8 @@ export class FSReadTool implements InnateTool {
 
 export class FSWriteTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_write;
+  readonly actionCategory = 'fs_write' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -334,6 +338,8 @@ export class FSWriteTool implements InnateTool {
 
 export class FSEditTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_edit;
+  readonly actionCategory = 'fs_edit' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -395,6 +401,8 @@ export class FSEditTool implements InnateTool {
 
 export class FSDeleteTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_delete;
+  readonly actionCategory = 'fs_delete' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -419,6 +427,8 @@ export class FSDeleteTool implements InnateTool {
 
 export class FSListTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_list;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -469,6 +479,8 @@ export class FSListTool implements InnateTool {
 
 export class FSMkdirTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_mkdir;
+  readonly actionCategory = 'fs_mkdir' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -482,6 +494,8 @@ export class FSMkdirTool implements InnateTool {
 
 export class FSExistsTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_exists;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -502,6 +516,8 @@ export class FSExistsTool implements InnateTool {
 
 export class FSStatTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_stat;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -525,6 +541,8 @@ export class FSStatTool implements InnateTool {
 
 export class FSSearchTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_search;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;
@@ -589,6 +607,8 @@ function matchPattern(name: string, pattern: string): boolean {
 
 export class FSGrepTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_grep;
+  readonly actionCategory = 'fs_read' as const;
+  readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const path = args['path'] as string;

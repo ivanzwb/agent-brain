@@ -3,6 +3,7 @@ import { MemoryHub } from './memory/memory-hub';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
 import { CronHub } from './cron/cron-hub';
 import { SkillHub } from './skill/skill-hub';
+import type { SandboxConfig } from './sandbox/security-sandbox';
 
 // ============================================================
 // Cognitive Phases - Five-stage human-like thinking process
@@ -331,6 +332,9 @@ export interface AgentBrainOptions {
   cron?: CronHub;
   /** Skill hub (unified management of dynamically installed skill packages) */
   skills: SkillHub;
+  /** Security sandbox configuration (optional). When provided, all tool
+   *  executions go through permission checks before running. */
+  sandbox?: SandboxConfig;
   config: AgentConfig;
   eventPublisher?: IEventPublisher;
 }

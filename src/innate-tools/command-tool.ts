@@ -129,6 +129,8 @@ const bgProcesses = new Map<number, { command: string; name?: string; startTime:
 
 export class CmdExecTool implements InnateTool {
   readonly definition: ToolDefinition = CMD_TOOL_DEFINITIONS.cmd_exec;
+  readonly actionCategory = 'cmd_exec' as const;
+  readonly permissionTargetArgs = ['command'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const command = args['command'] as string;
@@ -170,6 +172,8 @@ export class CmdExecTool implements InnateTool {
 
 export class CmdRunTool implements InnateTool {
   readonly definition: ToolDefinition = CMD_TOOL_DEFINITIONS.cmd_run;
+  readonly actionCategory = 'cmd_run' as const;
+  readonly permissionTargetArgs = ['command'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const script = args['script'] as string | undefined;
@@ -223,12 +227,13 @@ export class CmdRunTool implements InnateTool {
 
 export class CmdKillTool implements InnateTool {
   readonly definition: ToolDefinition = CMD_TOOL_DEFINITIONS.cmd_kill;
+  readonly actionCategory = 'cmd_kill' as const;
+  readonly permissionTargetArgs = ['pid'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const pid = args['pid'] as number;
     const force = args['force'] as boolean || false;
 
-    const { spawn } = await import('child_process');
     const signal = force ? 'SIGKILL' : 'SIGTERM';
 
     return new Promise((resolve) => {
@@ -244,6 +249,8 @@ export class CmdKillTool implements InnateTool {
 
 export class CmdBgTool implements InnateTool {
   readonly definition: ToolDefinition = CMD_TOOL_DEFINITIONS.cmd_bg;
+  readonly actionCategory = 'cmd_bg' as const;
+  readonly permissionTargetArgs = ['command'];
 
   async execute(args: Record<string, unknown>): Promise<string> {
     const command = args['command'] as string;
