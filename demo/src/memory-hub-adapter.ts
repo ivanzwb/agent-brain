@@ -19,7 +19,7 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
   }
 
   async conversation_track(conversationId: string, role: string, content: string): Promise<void> {
-    await this.mem.appendMessage(role as 'user' | 'assistant', content);
+    await this.mem.appendMessage(conversationId, role as 'user' | 'assistant', content);
   }
 
   async conversation_search(args: Record<string, unknown>): Promise<string> {
