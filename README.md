@@ -15,12 +15,14 @@ English | [中文](./README.zh-CN.md)
 | Feature | Description |
 |---------|-------------|
 | **Five-phase Cognitive Cycle** | PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT |
+| **Adaptive Fast Path** | PERCEIVE classifies complexity; simple tasks skip to EXECUTE via Strategy pattern (2 LLM calls) |
 | **Nested ReAct** | Outer task planning + inner per-step execution loops |
 | **Dynamic Skill Acquisition** | Auto-search and install skills during execution |
 | **Interactive User Input** | Pause and wait for user input via `ask_user` tool |
 | **Four Thinking Modes** | CREATIVE, LOGICAL, EMPATHETIC, STRUCTURAL |
 | **Token Budget** | Context window optimization |
 | **Memory Integration** | Context-aware execution |
+| **Security Sandbox** | Rule-based permission guard (ALLOW / DENY / ASK) for all tool execution |
 
 ## Overview
 
@@ -30,11 +32,9 @@ This framework models an agent's task processing as a **five-phase cognitive cyc
 PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 ```
 
-- **PERCEIVE**: Understand the task, identify intent, clarify ambiguities
-- **ASSESS**: Evaluate capabilities and resources, determine skill gaps
-- **PLAN**: Break down into ordered execution steps
-- **EXECUTE**: Execute with per-step ReAct loops (Thought → Action → Observation)
-- **REFLECT**: Evaluate results, learn lessons, decide if replanning is needed
+The PERCEIVE phase simultaneously classifies task complexity, selecting an **execution strategy**:
+- **Simple tasks** (e.g., "find stock-related skills"): `FastPathStrategy` skips to EXECUTE directly (2 LLM calls)
+- **Complex tasks** (e.g., "analyze server performance and generate report"): `FullCycleStrategy` runs the full ASSESS → PLAN → EXECUTE → REFLECT cycle
 
 ### Dual ReAct Architecture
 
@@ -66,6 +66,7 @@ The framework implements a nested ReAct architecture:
 - **Four thinking modes**: CREATIVE, LOGICAL, EMPATHETIC, STRUCTURAL
 - **Token budget management** for context window optimization
 - **Memory integration** for context-aware execution
+- **Security sandbox** with rule-based permission control (ALLOW / DENY / ASK) for all tool and skill execution
 - **Extensible event system** for observability
 
 ## Installation
@@ -160,6 +161,36 @@ const agent = new AgentBrain({
 
 Use `agent.isWaitingForUserInput()` to check if the agent is currently waiting for input.
 
+### Security Sandbox
+
+The framework provides a built-in `SecuritySandbox` that guards all tool execution with permission rules:
+
+- **ALLOW**: Execute without prompting
+- **DENY**: Reject immediately (returned to the model as an Observation, allowing fallback)
+- **ASK**: Prompt the user before executing (default)
+
+Each innate tool self-declares its `actionCategory` (e.g., `fs_read`, `cmd_exec`, `web_fetch`) and `permissionTargetArgs`, enabling Open/Closed permission checks without hardcoded mappings. Skill tools default to the `skill_exec` category.
+
+```typescript
+const agent = new AgentBrain({
+  model,
+  skills,
+  memory,
+  sandbox: {
+    workingDirectory: './agent-workspace',
+    defaultPermission: 'ASK',
+    rules: [
+      { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
+      { action: 'fs_delete', permission: 'DENY' },
+      { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
+    ],
+  },
+  config: { systemPrompt: 'You are a helpful AI assistant.', modelContextSize: 128000 },
+});
+```
+
+Rules are matched last-to-first (later rules take higher priority). Patterns support glob (`*`, `**`) and regex (`/pattern/`).
+
 ## API Reference
 
 ### AgentBrain
@@ -201,6 +232,9 @@ interface TaskResult {
 | `heartbeatTimeoutMs` | 60000 | Heartbeat timeout threshold |
 | `maxConsecutiveFailures` | 3 | Max consecutive failures before termination |
 | `maxReplans` | 2 | Max replanning attempts in REFLECT phase |
+| `sandbox.workingDirectory` | `os.tmpdir()/.bios-agent` | Default working directory for all tools |
+| `sandbox.defaultPermission` | `ASK` | Default permission when no rule matches (`ALLOW`, `DENY`, `ASK`) |
+| `sandbox.rules` | `[]` | Initial permission rules (`{ action, pattern?, permission }`) |
 
 ## Requirements
 

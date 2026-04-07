@@ -76,6 +76,38 @@ The framework collaborates with external systems through abstract interfaces. Th
 
 ### 2.1 Overview
 
+The framework processes every task through a **five-phase cognitive cycle**. The first phase — PERCEIVE — simultaneously classifies task complexity, enabling an **execution strategy** to be selected before the remaining phases run:
+
+```
+Task Input
+  │
+  ▼
+┌──────────────────────────────────────────────────────┐
+│  Phase 1: PERCEIVE — Understand Task & Classify       │
+│  Identify intent, clarify ambiguities, define success │
+│  criteria, and classify complexity (simple / complex) │
+│  For simple tasks: also produce a ready-to-execute    │
+│  single-step plan (fastPlan)                          │
+├─────────────┬──────────────────────────────────────── |
+│             │                                        │
+│   simple    │   complex                              │
+│      │      │      │                                 │
+│      ▼      │      ▼                                 │
+│  FastPath   │  FullCycle                             │
+│  Strategy   │  Strategy                              │
+│  EXECUTE    │  ASSESS → PLAN → EXECUTE → REFLECT     │
+│      │      │      │                                 │
+│      ▼      │      ▼                                 │
+│   Result    │   Result                               │
+└─────────────┴────────────────────────────────────────┘
+```
+
+**Fast Path** (simple tasks): PERCEIVE produces a single-step plan (`fastPlan`), the `FastPathStrategy` skips ASSESS/PLAN/REFLECT and goes directly to EXECUTE. Reduces LLM calls from 5+ to 2.
+
+**Full Cycle** (complex tasks): The `FullCycleStrategy` proceeds through ASSESS → PLAN → EXECUTE → REFLECT as described below.
+
+Both strategies implement the `ExecutionStrategy` interface, making it easy to add new execution paths (e.g., a `MediumPathStrategy`) without modifying `AgentBrain`.
+
 ```
 Task Input
   │
@@ -136,6 +168,11 @@ Task Input
 - **Clarify ambiguities**: Identify ambiguities in the task description
   - When ambiguous, flag it (can proactively ask questions or make reasonable assumptions later)
 - **Define success criteria**: Clarify what constitutes a "completed" result
+- **Classify complexity**: Determine whether the task is `simple` or `complex`
+  - Simple: single-action, clear 1-2 tool call mapping
+  - Complex: multi-step, dependencies, analysis/synthesis, unclear approach
+  - When in doubt, classify as `complex`
+- **Generate fast plan** (simple tasks only): Produce a single-step `fastPlan` so ExecutionStrategy can skip ASSESS/PLAN/REFLECT
 
 **Output structure** — `Perception`:
 
@@ -145,7 +182,26 @@ Task Input
   "deepIntent": "Need a quarterly security audit report for the technical director, emphasizing risk trends",
   "constraints": ["Due next Friday", "No more than 20 pages", "Must include data charts"],
   "ambiguities": ["Which quarter is unspecified", "Whether bilingual versions are needed is unclear"],
-  "successCriteria": ["Cover all security incidents", "Trend analysis backed by data", "Format conforms to company template"]
+  "successCriteria": ["Cover all security incidents", "Trend analysis backed by data", "Format conforms to company template"],
+  "complexity": "complex"
+}
+```
+
+For simple tasks, the output also includes `fastPlan`:
+
+```json
+{
+  "surfaceRequest": "Find stock-related skills",
+  "deepIntent": "Search the skill registry for stock analysis skills",
+  "constraints": [],
+  "ambiguities": [],
+  "successCriteria": ["Return a list of matching skills"],
+  "complexity": "simple",
+  "fastPlan": {
+    "strategy": "Search for stock-related skills",
+    "steps": [{ "id": "s1", "description": "Search skill registry for stock-related skills", "dependsOn": [] }],
+    "expectedOutcome": "List of matching skills"
+  }
 }
 ```
 
@@ -596,6 +652,16 @@ When the model outputs a tool call intent (ToolCallIntent), ReactLoop routes in 
 ```
 Model output: call tool "X" with args {...}
     │
+    ├── Exempt check (ask_user, memory_*, skill_*, etc.)?
+    │       │
+    │       ├── YES → Skip sandbox, execute directly
+    │       │
+    │       └── NO → SecuritySandbox.checkPermission(action, target)
+    │                   │
+    │                   ├── DENY → Return denial as Observation
+    │                   ├── ASK  → Prompt user; denied → Observation
+    │                   └── ALLOW / approved → Continue
+    │
     ├── InnateToolHub.hasTool("X")?
     │       │
     │       ├── YES → InnateToolHub.execute("X", args)
@@ -607,6 +673,8 @@ Model output: call tool "X" with args {...}
     │
     └── Execution result → Observation → Appended to message history
 ```
+
+The sandbox permission check is **centralized in ReactLoop** before any tool dispatch. Each innate tool self-declares its `actionCategory` and `permissionTargetArgs` via the `InnateTool` interface, so the routing logic does not need a hardcoded mapping (Open/Closed Principle). Skill tools default to the `skill_exec` action category.
 
 ### 4.5 Step Log Structure
 
@@ -929,7 +997,7 @@ The framework publishes the entire cognitive cycle process through an event mech
 | Event Type | Trigger Timing | Payload |
 |-----------|----------------|---------|
 | `task:start` | Task begins | Task ID, user input |
-| `phase:perceive` | PERCEIVE complete | Perception artifact |
+| `phase:perceive` | PERCEIVE complete | Perception artifact (includes complexity classification) |
 | `phase:assess` | ASSESS complete | Assessment artifact |
 | `phase:plan` | PLAN complete | Plan artifact, replan count |
 | `planStep:start` | Plan step begins | Step ID, description |
@@ -977,6 +1045,7 @@ All step logs and cognitive artifacts are persisted, supporting:
 | Token counting interface (ITokenCounter) | In | Calculate token count for text and tool declarations; used for budget management |
 | Skill center (SkillHub) | Bidirectional | Query skill list, load tool definitions, execute skill tools |
 | Memory center (MemoryHub) | Bidirectional | Retrieve relevant memories, track conversation messages |
+| Security sandbox (SecuritySandbox) | In | Permission-based execution guard; rule management and permission checking |
 | Event publisher interface (IEventPublisher) | Out | Publish cognitive phase events and step events |
 
 ### 9.2 Framework Contract Interfaces
@@ -1016,6 +1085,20 @@ interface SkillHub extends IHub {
 interface IEventPublisher {
   publish(type: string, payload: unknown): void;
 }
+
+/** Security sandbox — permission-based execution guard */
+interface SecuritySandbox {
+  /** Check permission for a tool action. May prompt user via AskHandler. */
+  checkPermission(request: PermissionRequest): Promise<PermissionDecision>;
+  /** Resolve a relative path against the sandbox working directory. */
+  resolvePath(filePath: string): string;
+  /** The sandbox working directory (used as default cwd for cmd tools). */
+  readonly workingDirectory: string;
+  /** Rule management */
+  addRule(rule: PermissionRule): void;
+  removeRules(action: ActionCategory, pattern?: string): number;
+  getRules(): PermissionRule[];
+}
 ```
 
 ### 9.2.1 AgentBrain Initialization Options
@@ -1030,6 +1113,8 @@ interface AgentBrainOptions {
   /** Skill center */
   skills: SkillHub;
   config: AgentConfig;
+  /** Security sandbox configuration */
+  sandbox?: SandboxConfig;
   eventPublisher?: IEventPublisher;
 }
 ```
@@ -1045,14 +1130,24 @@ interface AgentBrainOptions {
 | maxConsecutiveFailures | 3 | Maximum consecutive failure count |
 | maxReplans | 2 | Maximum replan count triggered by REFLECT |
 
+#### SandboxConfig
+
+| Config | Default | Description |
+|--------|---------|-------------|
+| workingDirectory | `os.tmpdir()/.bios-agent` | Default working directory for all tools; relative paths resolve against this |
+| defaultPermission | `ASK` | Default permission level when no rule matches (`ALLOW`, `DENY`, or `ASK`) |
+| rules | `[]` | Initial permission rules applied at construction time |
+
 ### 9.4 Pluggable Components
 
 | Component | Extension Method | Description |
 |-----------|-----------------|-------------|
+| Execution Strategy | Strategy pattern | Implement `ExecutionStrategy` interface to define new execution paths (e.g., `FastPathStrategy`, `FullCycleStrategy`) |
 | Thinking Mode Scheduler | Replace scheduling strategy | Customize thinking mode weight distribution for each cognitive phase |
 | Context Assembly Strategy | Strategy pattern | Replace priority ordering and compression algorithms |
 | Termination Condition | Condition chain | Add custom termination conditions |
 | Observation Result Formatter | Formatter | Define specialized result formatting for different tool types |
+| Security Sandbox | Constructor config | Customize permission rules, working directory, and ASK handler |
 
 ---
 

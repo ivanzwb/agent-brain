@@ -129,6 +129,10 @@ export interface Perception {
   ambiguities: string[];
   /** Success criteria */
   successCriteria: string[];
+  /** Task complexity classification (determined during PERCEIVE) */
+  complexity: 'simple' | 'complex';
+  /** For simple tasks: a ready-to-execute single-step plan */
+  fastPlan?: Plan;
 }
 
 /** ASSESS phase output: self-capability assessment */

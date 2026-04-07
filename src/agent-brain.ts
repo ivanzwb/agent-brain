@@ -85,6 +85,9 @@ import {
   CronRunNowTool,
 } from './cron/cron-tools';
 import { SecuritySandbox } from './sandbox/security-sandbox';
+import { FastPathStrategy } from './strategy/fast-path-strategy';
+import { FullCycleStrategy } from './strategy/full-cycle-strategy';
+import type { ExecutionStrategy, CognitiveOps } from './strategy/types';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -243,64 +246,19 @@ export class AgentBrain {
       const memoryData = JSON.parse(memoryResult);
       const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
 
-      // ---- Phase 1: PERCEIVE ----
+      // ---- Phase 1: PERCEIVE (includes complexity classification) ----
       const perception = await this.perceive(userInput, memory, tracker);
       this.emit('phase:perceive', { taskId, perception });
 
-      // ---- Phase 2: ASSESS ----
-      const assessment = await this.assess(userInput, perception, tracker);
-      this.emit('phase:assess', { taskId, assessment });
+      // ---- Select execution strategy based on perceived complexity ----
+      const strategy: ExecutionStrategy = perception.complexity === 'simple'
+        ? new FastPathStrategy()
+        : new FullCycleStrategy();
 
-      // If assessed as not feasible, return early
-      if (!assessment.feasible) {
-        const answer = `I assessed this task and determined it's not feasible. Gaps: ${assessment.gaps.join('; ')}`;
-        return this.buildTaskResult(taskId, startTime, tracker, {
-          status: TaskStatus.FAILED,
-          terminationReason: TerminationReason.COMPLETED,
-          finalAnswer: answer,
-          steps: [],
-          cognition: { perception, assessment, plan: this.emptyPlan() },
-        });
-      }
-
-      // ---- Phase 3-5: PLAN → EXECUTE → REFLECT (can loop) ----
-      let plan: Plan | undefined;
-      let executeResult: ExecuteResult | undefined;
-      let reflection: Reflection | undefined;
-      let replanCount = 0;
-      let userContext = userInput;
-
-      while (replanCount <= this.config.maxReplans) {
-        // Phase 3: PLAN
-        plan = await this.plan(userContext, perception, assessment, tracker, reflection, userContext !== userInput ? userContext : undefined);
-        this.emit('phase:plan', { taskId, plan, replanCount });
-
-        // Phase 4: EXECUTE
-        executeResult = await this.execute(taskId, assessment, plan, tracker, userContext);
-        this.emit('phase:execute', { taskId, result: executeResult });
-
-        // Phase 5: REFLECT
-        reflection = await this.reflect(userContext, perception, plan, executeResult, tracker);
-        this.emit('phase:reflect', { taskId, reflection });
-
-        if (!reflection.needsReplan) break;
-
-        replanCount++;
-        this.emit('phase:replan', { taskId, replanCount });
-      }
-
-      const finalAnswer = executeResult!.finalAnswer;
-      if (finalAnswer) {
-        await this.memory.conversation_track(taskId, 'assistant', finalAnswer);
-      }
-
-      return this.buildTaskResult(taskId, startTime, tracker, {
-        status: executeResult!.status,
-        terminationReason: executeResult!.terminationReason,
-        finalAnswer: executeResult!.finalAnswer,
-        steps: executeResult!.steps,
-        cognition: { perception, assessment, plan: plan!, reflection },
-      });
+      return strategy.run(
+        { taskId, startTime, userInput, memoryText: memory, tracker, perception },
+        this.createCognitiveOps(),
+      );
     } catch (err) {
       this.emit('task:error', { taskId, error: String(err) });
       return this.buildTaskResult(taskId, startTime, tracker, {
@@ -318,7 +276,27 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 1: PERCEIVE — Understand task
+  // Create CognitiveOps delegate for execution strategies
+  // ===========================================================
+
+  private createCognitiveOps(): CognitiveOps {
+    return {
+      assess: this.assess.bind(this),
+      plan: this.plan.bind(this),
+      execute: this.execute.bind(this),
+      reflect: this.reflect.bind(this),
+      emit: this.emit.bind(this),
+      trackConversation: (id, role, content) => this.memory.conversation_track(id, role, content),
+      buildResult: this.buildTaskResult.bind(this),
+      emptyPerception: this.emptyPerception.bind(this),
+      emptyAssessment: this.emptyAssessment.bind(this),
+      emptyPlan: this.emptyPlan.bind(this),
+      maxReplans: this.config.maxReplans,
+    };
+  }
+
+  // ===========================================================
+  // Phase 1: PERCEIVE — Understand task & classify complexity
   // ===========================================================
 
   private async perceive(userInput: string, memoryText: string, tracker: TokenTracker): Promise<Perception> {
@@ -542,7 +520,7 @@ export class AgentBrain {
   // ---- Empty fallbacks for parse failures ----
 
   private emptyPerception(): Perception {
-    return { surfaceRequest: '', deepIntent: '', constraints: [], ambiguities: [], successCriteria: [] };
+    return { surfaceRequest: '', deepIntent: '', constraints: [], ambiguities: [], successCriteria: [], complexity: 'complex' };
   }
 
   private emptyAssessment(): Assessment {

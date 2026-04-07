@@ -91,7 +91,11 @@ export class SkillHubAdapter implements SkillHub {
 
   async skill_install(args: Record<string, unknown>): Promise<string> {
     const source = args['source'] as string;
-    const entry = await this.sf.install(source);
+    // Local directory → install(); otherwise network install (ClawHub slug / GitHub owner/repo)
+    const fs = await import('fs');
+    const entry = fs.existsSync(source) && fs.statSync(source).isDirectory()
+      ? await this.sf.install(source)
+      : await this.sf.installFromNetwork(source);
     return JSON.stringify({ name: entry.name, status: entry.status });
   }
 

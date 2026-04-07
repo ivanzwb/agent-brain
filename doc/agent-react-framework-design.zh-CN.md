@@ -73,6 +73,37 @@
 
 ### 2.1 总览
 
+框架对每个任务都执行**五阶段认知循环**。第一阶段 PERCEIVE 在理解任务的同时对复杂度进行分类，从而在后续阶段运行前选择合适的**执行策略**：
+
+```
+任务输入
+  │
+  ▼
+┌──────────────────────────────────────────────────────┐
+│  Phase 1: PERCEIVE — 理解任务 & 分类复杂度         │
+│  识别意图、澄清模糊点、定义成功标准，               │
+│  同时判断复杂度（simple / complex）              │
+│  简单任务：同时产出可直接执行的单步计划（fastPlan） │
+├─────────────┬────────────────────────────────────────┘
+│             │                                         |
+│   简单      │   复杂                                   |
+│      │      │      │                                  |
+│      ▼      │      ▼                                 |
+│  FastPath   │  FullCycle                             |
+│  Strategy   │  Strategy                             |
+│  EXECUTE    │  ASSESS → PLAN → EXECUTE → REFLECT     |
+│      │      │      │                                |
+│      ▼      │      ▼                                 |
+│   结果      │   结果                                  │
+└─────────────┴────────────────────────────────────────┘
+```
+
+**快速通道**（简单任务）：PERCEIVE 产出单步计划（`fastPlan`），`FastPathStrategy` 跳过 ASSESS/PLAN/REFLECT，直接进入 EXECUTE。将 LLM 调用从 5+ 次降低到 2 次。
+
+**完整循环**（复杂任务）：`FullCycleStrategy` 按 ASSESS → PLAN → EXECUTE → REFLECT 完整执行。
+
+两种策略均实现 `ExecutionStrategy` 接口，新增执行路径（如 `MediumPathStrategy`）无需修改 `AgentBrain`。
+
 ```
 任务输入
   │
@@ -124,6 +155,11 @@
 - **澄清模糊点**：识别任务描述中的歧义
   - 有歧义时，标注出来（后续可主动提问或做合理假设）
 - **定义成功标准**：明确什么样的结果才算"完成"
+- **分类复杂度**：判断任务是 `simple` 还是 `complex`
+  - 简单：单一操作、明确映射到 1-2 个工具调用
+  - 复杂：多步骤、有依赖、需要分析/综合、方法不明确
+  - 拿不准时分类为 `complex`
+- **生成快速计划**（仅简单任务）：产出单步 `fastPlan`，使 ExecutionStrategy 可跳过 ASSESS/PLAN/REFLECT
 
 **产出结构** — `Perception`：
 
@@ -133,7 +169,26 @@
   "deepIntent": "需要一份面向技术总监的季度安全审计报告，重点突出风险趋势",
   "constraints": ["截止下周五", "不超过 20 页", "需包含数据图表"],
   "ambiguities": ["未明确是哪个季度", "未说明是否需要中英文双版本"],
-  "successCriteria": ["覆盖所有安全事件", "趋势分析有数据支撑", "格式符合公司模板"]
+  "successCriteria": ["覆盖所有安全事件", "趋势分析有数据支撑", "格式符合公司模板"],
+  "complexity": "complex"
+}
+```
+
+简单任务的产出还包含 `fastPlan`：
+
+```json
+{
+  "surfaceRequest": "查找 stock 相关的 skill",
+  "deepIntent": "从技能仓库搜索股票分析相关的技能",
+  "constraints": [],
+  "ambiguities": [],
+  "successCriteria": ["返回匹配的技能列表"],
+  "complexity": "simple",
+  "fastPlan": {
+    "strategy": "搜索 stock 相关的技能",
+    "steps": [{ "id": "s1", "description": "从技能注册表搜索 stock 相关技能", "dependsOn": [] }],
+    "expectedOutcome": "匹配的技能列表"
+  }
 }
 ```
 
@@ -576,6 +631,16 @@ You operate in a Thought → Action → Observation loop:
 ```
 模型输出: call tool "X" with args {...}
     │
+    ├── 免检工具（ask_user、memory_*、skill_* 等）？
+    │       │
+    │       ├── 是 → 跳过沙箱，直接执行
+    │       │
+    │       └── 否 → SecuritySandbox.checkPermission(action, target)
+    │                   │
+    │                   ├── DENY → 将拒绝信息作为 Observation 返回
+    │                   ├── ASK  → 向用户确认；拒绝则作为 Observation
+    │                   └── ALLOW / 用户批准 → 继续执行
+    │
     ├── InnateToolHub.hasTool("X")?
     │       │
     │       ├── YES → InnateToolHub.execute("X", args)
@@ -587,6 +652,8 @@ You operate in a Thought → Action → Observation loop:
     │
     └── 执行结果 → Observation → 加入消息历史
 ```
+
+沙箱权限检查**集中在 ReactLoop 中**，在任何工具分发之前执行。每个天生工具通过 `InnateTool` 接口自声明其 `actionCategory` 和 `permissionTargetArgs`，因此路由逻辑不需要硬编码映射（开闭原则）。技能工具默认使用 `skill_exec` 操作类别。
 
 ### 4.5 步骤日志结构
 
@@ -897,7 +964,7 @@ REFLECT 阶段判定需重规划时，回到 PLAN 阶段重新制定计划并再
 | 事件类型 | 触发时机 | 携带信息 |
 |---------|---------|---------|
 | `task:start` | 任务开始 | 任务 ID、用户输入 |
-| `phase:perceive` | PERCEIVE 完成 | Perception 产物 |
+| `phase:perceive` | PERCEIVE 完成 | Perception 产物（包含复杂度分类） |
 | `phase:assess` | ASSESS 完成 | Assessment 产物 |
 | `phase:plan` | PLAN 完成 | Plan 产物、重规划次数 |
 | `planStep:start` | 计划步骤开始 | 步骤 ID、描述 |
@@ -945,6 +1012,7 @@ REFLECT 阶段判定需重规划时，回到 PLAN 阶段重新制定计划并再
 | Token 计数接口 (ITokenCounter) | 入 | 计算文本和工具声明的 token 数，用于预算管理 |
 | 技能中心 (SkillHub) | 双向 | 查询技能列表、加载工具定义、执行技能工具 |
 | 记忆中心 (MemoryHub) | 双向 | 检索相关记忆、追踪对话消息 |
+| 安全沙箱 (SecuritySandbox) | 入 | 基于规则的执行权限守卫；规则管理与权限检查 |
 | 事件发布接口 (IEventPublisher) | 出 | 发布认知阶段事件与步骤事件 |
 
 ### 9.2 框架契约接口
@@ -984,6 +1052,20 @@ interface SkillHub extends IHub {
 interface IEventPublisher {
   publish(type: string, payload: unknown): void;
 }
+
+/** 安全沙箱 — 基于规则的执行权限守卫 */
+interface SecuritySandbox {
+  /** 检查工具操作的权限。可通过 AskHandler 向用户确认。 */
+  checkPermission(request: PermissionRequest): Promise<PermissionDecision>;
+  /** 将相对路径解析为沙箱工作目录下的绝对路径。 */
+  resolvePath(filePath: string): string;
+  /** 沙箱工作目录（用作 cmd 工具的默认 cwd）。 */
+  readonly workingDirectory: string;
+  /** 规则管理 */
+  addRule(rule: PermissionRule): void;
+  removeRules(action: ActionCategory, pattern?: string): number;
+  getRules(): PermissionRule[];
+}
 ```
 
 ### 9.2.1 AgentBrain 初始化选项
@@ -998,6 +1080,8 @@ interface AgentBrainOptions {
   /** 技能中心 */
   skills: SkillHub;
   config: AgentConfig;
+  /** 安全沙箱配置 */
+  sandbox?: SandboxConfig;
   eventPublisher?: IEventPublisher;
 }
 ```
@@ -1013,14 +1097,24 @@ interface AgentBrainOptions {
 | maxConsecutiveFailures | 3 | 连续失败次数上限 |
 | maxReplans | 2 | REFLECT 触发重规划的最大次数 |
 
+#### SandboxConfig（沙箱配置）
+
+| 配置 | 默认值 | 说明 |
+|------|-------|------|
+| workingDirectory | `os.tmpdir()/.bios-agent` | 所有工具的默认工作目录；相对路径基于此目录解析 |
+| defaultPermission | `ASK` | 无匹配规则时的默认权限级别（`ALLOW`、`DENY` 或 `ASK`） |
+| rules | `[]` | 构造时应用的初始权限规则列表 |
+
 ### 9.4 可插拔组件
 
 | 组件 | 扩展方式 | 说明 |
 |------|---------|------|
+| 执行策略 | 策略模式 | 实现 `ExecutionStrategy` 接口定义新执行路径（如 `FastPathStrategy`、`FullCycleStrategy`） |
 | 思维模式调度器 | 替换调度策略 | 可自定义每个认知阶段的思维模式权重配比 |
 | 上下文组装策略 | 策略模式 | 可替换优先级排序与压缩算法 |
 | 终止条件判定 | 条件链 | 可添加自定义终止条件 |
 | 观察结果格式化 | 格式化器 | 可为不同工具类型定义专属的结果格式化方式 |
+| 安全沙箱 | 构造配置 | 可自定义权限规则、工作目录和 ASK 处理器 |
 
 ---
 

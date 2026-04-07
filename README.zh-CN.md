@@ -15,12 +15,14 @@
 | 特性 | 说明 |
 |------|------|
 | **五阶段认知循环** | PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT |
+| **自适应快速通道** | PERCEIVE 阶段同时分类复杂度，简单任务通过策略模式直接进入 EXECUTE（2 次 LLM 调用） |
 | **嵌套 ReAct** | 外层任务规划 + 内层按步骤独立执行循环 |
 | **动态技能获取** | 执行过程中自动搜索并安装新技能 |
 | **交互式用户输入** | 通过 `ask_user` 工具暂停并等待用户输入 |
 | **四种思维模式** | 创造性、逻辑性、情感洞察、结构规划 |
 | **Token 预算管理** | 上下文窗口优化 |
 | **记忆集成** | 上下文感知的执行 |
+| **安全沙箱** | 基于规则的工具执行权限守卫（ALLOW / DENY / ASK） |
 
 ## 概述
 
@@ -29,6 +31,10 @@
 ```
 PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 ```
+
+PERCEIVE 阶段同时分类任务复杂度，选择合适的**执行策略**：
+- **简单任务**（如“查找 stock 相关的 skill”）：`FastPathStrategy` 直接进入 EXECUTE（2 次 LLM 调用）
+- **复杂任务**（如“分析服务器性能并生成报告”）：`FullCycleStrategy` 执行完整的 ASSESS → PLAN → EXECUTE → REFLECT 循环
 
 - **PERCEIVE（感知）**：理解任务，识别意图，澄清模糊点
 - **ASSESS（评估）**：评估能力与资源，判断技能缺口
@@ -66,6 +72,7 @@ PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 - **四种思维模式**：创造性（CREATIVE）、逻辑性（LOGICAL）、情感洞察（EMPATHETIC）、结构规划（STRUCTURAL）
 - **Token 预算管理**，优化上下文窗口利用
 - **记忆集成**，实现上下文感知的执行
+- **安全沙箱**，基于规则的权限控制（ALLOW / DENY / ASK），守护所有工具和技能的执行
 - **可扩展事件系统**，支持可观测性
 
 ## 安装
@@ -160,6 +167,36 @@ const agent = new AgentBrain({
 
 使用 `agent.isWaitingForUserInput()` 检查智能体是否正在等待用户输入。
 
+### 安全沙箱
+
+框架内置 `SecuritySandbox`，通过权限规则守护所有工具执行：
+
+- **ALLOW**：无需确认，直接执行
+- **DENY**：立即拒绝（作为 Observation 返回给模型，允许回退策略）
+- **ASK**：执行前向用户确认（默认）
+
+每个天生工具自声明其 `actionCategory`（如 `fs_read`、`cmd_exec`、`web_fetch`）和 `permissionTargetArgs`，实现无需硬编码映射的开闭原则权限检查。技能工具默认使用 `skill_exec` 类别。
+
+```typescript
+const agent = new AgentBrain({
+  model,
+  skills,
+  memory,
+  sandbox: {
+    workingDirectory: './agent-workspace',
+    defaultPermission: 'ASK',
+    rules: [
+      { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
+      { action: 'fs_delete', permission: 'DENY' },
+      { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
+    ],
+  },
+  config: { systemPrompt: '你是一个有帮助的 AI 助手。', modelContextSize: 128000 },
+});
+```
+
+规则按从后往前的顺序匹配（后添加的规则优先级更高）。模式支持 glob（`*`、`**`）和正则表达式（`/pattern/`）。
+
 ## API 参考
 
 ### AgentBrain
@@ -201,6 +238,9 @@ interface TaskResult {
 | `heartbeatTimeoutMs` | 60000 | 心跳超时阈值 |
 | `maxConsecutiveFailures` | 3 | 连续失败次数上限 |
 | `maxReplans` | 2 | REFLECT 触发重规划的最大次数 |
+| `sandbox.workingDirectory` | `os.tmpdir()/.bios-agent` | 所有工具的默认工作目录 |
+| `sandbox.defaultPermission` | `ASK` | 无匹配规则时的默认权限（`ALLOW`、`DENY`、`ASK`） |
+| `sandbox.rules` | `[]` | 初始权限规则（`{ action, pattern?, permission }`） |
 
 ## 环境要求
 
