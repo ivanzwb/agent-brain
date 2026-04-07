@@ -23,16 +23,16 @@ import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
 
 // ============================================================
-// ReactLoop — EXECUTE 阶段的 Thought→Action→Observation 内循环
+// ReactLoop — Inner loop (Thought→Action→Observation) within EXECUTE phase
 // ============================================================
 
 export interface ReactLoopDeps {
   controller: LoopController;
   model: IModelClient;
   memory?: MemoryHub;
-  /** 天生工具提供者（系统内建，固定不变） */
+  /** Innate tool provider (system-built, fixed) */
   innateToolHub: InnateToolHub;
-  /** 技能中心（预装技能，不支持动态安装） */
+  /** Skill hub (pre-installed skills, no dynamic installation) */
   skillHub: SkillHub;
   budget: PromptBudget;
   eventPublisher?: IEventPublisher;
@@ -40,17 +40,17 @@ export interface ReactLoopDeps {
 }
 
 export interface ReactLoopContext {
-  /** 会话ID，用于跟踪消息属于哪个任务会话 */
+  /** Conversation ID, used to track which task session messages belong to */
   conversationId: string;
-  /** 外层传入的系统提示 + 认知阶段引导 */
+  /** System prompt from outer layer + cognitive phase guidance */
   systemPrompt: string;
-  /** PLAN 阶段产出的执行计划 */
+  /** Execution plan from PLAN phase */
   plan: Plan;
-  /** ASSESS 阶段产出（含技能缺口信息） */
+  /** Assessment from ASSESS phase (includes skill gap info) */
   assessment: Assessment;
-  /** 思维模式引导文本 */
+  /** Thinking mode guidance text */
   thinkingGuidance: string;
-  /** 用户的上下文信息（包含之前通过 ask_user 提供的信息） */
+  /** User context information (includes info provided via ask_user) */
   userContext?: string;
 }
 
@@ -72,14 +72,14 @@ export class ReactLoop {
     const allSteps: StepLog[] = [];
     const planStepResults: PlanStepResult[] = [];
 
-    // 按依赖顺序逐步执行，每步一个独立 ReAct 循环
-    // 上一步的 output 作为下一步的输入上下文
+    // Execute step by step in dependency order, each step is an independent ReAct loop
+    // Previous step's output serves as next step's input context
     const stepOutputs = new Map<string, string>();
 
     controller.start();
 
     for (const planStep of ctx.plan.steps) {
-      // 收集该步骤依赖的前置步骤输出
+      // Collect outputs from prerequisite steps this step depends on
       const priorContext = this.collectPriorOutputs(planStep, stepOutputs);
 
       eventPublisher?.publish('planStep:start', { stepId: planStep.id, description: planStep.description });
@@ -99,19 +99,19 @@ export class ReactLoop {
         output: stepResult.output,
       });
 
-      // 如果某步非正常完成，终止后续步骤
+      // If any step doesn't complete normally, terminate subsequent steps
       if (stepResult.terminationReason !== TerminationReason.COMPLETED) {
         return this.buildResult(allSteps, planStepResults, stepResult.terminationReason, stepResult.output);
       }
     }
 
-    // 所有步骤完成，最后一步的 output 作为最终答案
+    // All steps completed, last step's output serves as final answer
     const lastOutput = planStepResults[planStepResults.length - 1]?.output;
     return this.buildResult(allSteps, planStepResults, TerminationReason.COMPLETED, lastOutput);
   }
 
   // ===========================================================
-  // 单个计划步骤的 ReAct 内循环
+  // ReAct inner loop for a single plan step
   // ===========================================================
 
   private async runPlanStep(
@@ -122,10 +122,10 @@ export class ReactLoop {
     const { controller, model, memory, budget, eventPublisher, tracker } = this.deps;
     const steps: StepLog[] = [];
 
-    // 构建计划概览文本（静态）
+    // Build plan overview text (static)
     const planOverview = this.buildPlanOverviewText(ctx.plan);
 
-    // 记忆只在每个 PlanStep 开始时检索一次，作为初始上下文
+    // Memory is retrieved once at the start of each PlanStep as initial context
     let memoryText = '';
     if (memory) {
       try {
@@ -134,10 +134,10 @@ export class ReactLoop {
         const data = JSON.parse(result);
         memoryText = data.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
       } catch {
-        // 记忆检索失败不应阻塞执行
+        // Memory retrieval failure should not block execution
       }
     }
-    // 构建初始消息
+    // Build initial messages
     const systemPrompt = this.buildSystemPrompt(ctx, planOverview, planStep, memoryText);
 
     const userPrompt = this.buildUserPrompt(ctx.plan, planStep, priorContext, ctx.userContext);
@@ -147,7 +147,7 @@ export class ReactLoop {
       { role: 'user', content: userPrompt },
     ];
 
-    // 注入用户之前通过 ask_user 提供的所有上下文
+    // Inject all context provided by user via ask_user
     const userProvidedContext = this.innateToolHub.getUserProvidedContext();
     if (userProvidedContext.length > 0) {
       const contextStr = userProvidedContext.map((ctx, i) => `[Response ${i + 1}]: ${ctx}`).join('\n\n');
@@ -157,7 +157,7 @@ export class ReactLoop {
       });
     }
 
-    // 天生工具
+    // Innate tools
     const innateTools = this.innateToolHub.getTools();
     let skillTools: ToolDefinition[] = [];
 
@@ -194,12 +194,12 @@ export class ReactLoop {
 
       controller.resetFailures();
 
-      // 记录 THOUGHT
+      // Log THOUGHT
       steps.push(this.logStep(controller.currentStep, StepPhase.THOUGHT, response.content));
       messages.push({ role: 'assistant', content: response.content, toolCall: response.toolCall });
       eventPublisher?.publish('step:thought', { step: controller.currentStep, content: response.content });
 
-      // 无工具调用 → 该步骤完成
+      // No tool call → step completed
       if (!response.toolCall) {
         return {
           stepId: planStep.id,
@@ -208,13 +208,13 @@ export class ReactLoop {
           terminationReason: TerminationReason.COMPLETED,
         };
       }
-      // 记录 ACTION
+      // Log ACTION
       const call = response.toolCall;
       steps.push(this.logStep(controller.currentStep, StepPhase.ACTION, `${call.name}(${JSON.stringify(call.arguments)})`, call.name, call.arguments));
       eventPublisher?.publish('step:action', { step: controller.currentStep, tool: call.name, args: call.arguments });
 
       // ---- OBSERVATION ----
-      // 天生工具优先，找不到则尝试技能工具
+      // Innate tools first, fall back to skill tools if not found
       let observation: string;
       const isAskUser = call.name === 'ask_user';
       if (this.innateToolHub.hasTool(call.name)) {
@@ -257,7 +257,7 @@ export class ReactLoop {
   // ----- private helpers -----
 
   /**
-   * 收集该步骤依赖的前置步骤输出，拼接为上下文文本。
+   * Collect outputs from prerequisite steps this step depends on, concatenate as context text.
    */
   private collectPriorOutputs(planStep: PlanStep, stepOutputs: Map<string, string>): string {
     if (planStep.dependsOn.length === 0) return '';
@@ -272,7 +272,7 @@ export class ReactLoop {
   }
 
   /**
-   * 构建计划概览文本（静态，每个 PlanStep 内不变）。
+   * Build plan overview text (static, unchanged within each PlanStep).
    */
   private buildPlanOverviewText(plan: Plan): string {
     const lines: string[] = [
@@ -288,7 +288,7 @@ export class ReactLoop {
   }
 
   /**
-   * 构建 system prompt：基础身份 + ReAct 协议 + 计划概览 + 当前步骤 + 记忆。
+   * Build system prompt: base identity + ReAct protocol + plan overview + current step + memory.
    */
   private buildSystemPrompt(
     ctx: ReactLoopContext,
@@ -309,7 +309,7 @@ export class ReactLoop {
       `Step ${planStep.id}: ${planStep.description}`,
       'You are executing ONLY this step. Do not proceed to the next step.',
     ];
-    // 技能目录（预装技能，固定不变）
+    // Skill catalog (pre-installed skills, fixed)
     const skillCatalogText = this.buildSkillCatalogText();
     if (skillCatalogText) {
       parts.push('', skillCatalogText);
@@ -321,7 +321,7 @@ export class ReactLoop {
   }
 
   /**
-   * 构建 user prompt：策略 + 当前步骤目标 + 前置输出 + 行动指令。
+   * Build user prompt: strategy + current step goal + prior outputs + action instructions.
    */
   private buildUserPrompt(plan: Plan, planStep: PlanStep, priorContext: string, userContext?: string): string {
     const lines: string[] = [
@@ -346,7 +346,7 @@ export class ReactLoop {
   }
 
   /**
-   * 构建已安装技能的目录文本。
+   * Build catalog text of installed skills.
    */
   private buildSkillCatalogText(): string {
     const descriptions = this.skillHub.getSkillsDescription();
@@ -394,7 +394,7 @@ export class ReactLoop {
 }
 
 // ============================================================
-// ReAct 行为协议 — 指导模型遵循 Thought→Action→Observation 循环
+// ReAct Behavior Protocol — Guides model to follow Thought→Action→Observation loop
 // ============================================================
 
 const REACT_PROTOCOL = `[ReAct Protocol]

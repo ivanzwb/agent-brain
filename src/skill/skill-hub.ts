@@ -2,41 +2,41 @@ import type { IHub } from '../types';
 import type { ToolDefinition } from '../innate-tools/types';
 
 // ============================================================
-// SkillHub — 技能的统一注册、查询与调度中心
+// SkillHub — Unified skill registration, query, and scheduling center
 //
-// AgentBrain 和 ReactLoop 通过 SkillHub 与技能交互，
-// 天生工具（install_skill）安装新技能后调用 SkillHub.install()，
-// 下一轮 ReactLoop 迭代即可感知新技能。
+// AgentBrain and ReactLoop interact with skills through SkillHub.
+// When the innate tool (install_skill) installs a new skill and calls SkillHub.install(),
+// the next ReactLoop iteration can perceive the new skill.
 // ============================================================
 
 export interface SkillHub extends IHub {
-    /** 列出所有已安装的技能 */
+    /** List all installed skills */
     skill_list(args: Record<string, unknown>): Promise<string>;
-    /** 安装新技能 */
+    /** Install a new skill */
     skill_install(args: Record<string, unknown>): Promise<string>;
-    /** 加载技能的主上下文 */
+    /** Load skill's main context */
     skill_load_main(args: Record<string, unknown>): Promise<string>;
-    /** 加载技能的参考文件 */
+    /** Load skill's reference files */
     skill_load_reference(args: Record<string, unknown>): Promise<string>;
-    /** 列出技能提供的工具 */
+    /** List tools provided by a skill */
     skill_list_tools(args: Record<string, unknown>): Promise<string>;
-    /** 返回所有已安装技能的描述文本列表 */
+    /** Get description text list of all installed skills */
     getSkillsDescription(): string[];
-    /** 返回所有已安装技能提供的工具定义 */
+    /** Get tool definitions provided by all installed skills */
     getTools(skillName: string): ToolDefinition[];
-    /** 执行某个技能中的工具 */
+    /** Execute a tool from a specific skill */
     execute(skillName: string, toolName: string, args: Record<string, unknown>): Promise<string>;
 }
 
 
 // ============================================================
-// Skill 声明 — 描述一个技能包的能力边界
+// Skill Declaration — Describes the capability boundaries of a skill package
 // ============================================================
 
-/** 技能声明：描述一组工具背后的领域知识和适用场景 */
+/** Skill declaration: describes the domain knowledge and use cases behind a set of tools */
 export interface SkillDeclaration {
-  /** 技能名称 */
+  /** Skill name */
   name: string;
-  /** 技能描述 */
+  /** Skill description */
   description: string;
 }

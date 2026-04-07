@@ -9,24 +9,24 @@ import type {
 } from '../types';
 
 // ============================================================
-// OpenAI 兼容 API 客户端（基于官方 openai SDK）
+// OpenAI Compatible API Client (based on official openai SDK)
 //
-// 支持所有 OpenAI Chat Completions 兼容的服务端点：
+// Supports all OpenAI Chat Completions compatible endpoints:
 //   - OpenAI API
 //   - Azure OpenAI
-//   - 本地模型（Ollama、vLLM、LocalAI 等）
+//   - Local models (Ollama, vLLM, LocalAI, etc.)
 // ============================================================
 
 export interface OpenAIClientOptions {
-  /** API 端点，默认 https://api.openai.com/v1 */
+  /** API endpoint, default https://api.openai.com/v1 */
   baseURL?: string;
-  /** API 密钥。本地模型可留空 */
+  /** API key. Can be empty for local models */
   apiKey?: string;
-  /** 模型名称，如 gpt-4o、gpt-4o-mini */
+  /** Model name, e.g., gpt-4o, gpt-4o-mini */
   model: string;
-  /** 温度参数，默认 0.7 */
+  /** Temperature parameter, default 0.7 */
   temperature?: number;
-  /** 请求超时（毫秒），默认 60000 */
+  /** Request timeout in milliseconds, default 60000 */
   timeoutMs?: number;
 }
 
@@ -47,7 +47,7 @@ export class OpenAIClient implements IModelClient {
 
   // ----- ITokenCounter -----
 
-  /** 近似 token 计数（1 token ≈ 4 字符），生产环境可覆写为 tiktoken */
+  /** Approximate token counting (1 token ≈ 4 characters), can be overridden with tiktoken in production */
   count(text: string): number {
     return Math.ceil(text.length / 4);
   }
@@ -72,7 +72,7 @@ export class OpenAIClient implements IModelClient {
     return this.parseCompletion(completion);
   }
 
-  // ----- 格式转换 -----
+  // ----- Format Conversion -----
 
   private toSDKMessage(msg: Message): ChatCompletionMessageParam {
     if (msg.role === 'assistant' && msg.toolCall) {

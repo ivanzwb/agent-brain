@@ -1,8 +1,8 @@
 import { ToolDefinition } from '../innate-tools/types';
 
 /**
- * Conversation (Short-term Memory) 工具的 Schema 定义
- * 用于跟踪、搜索和压缩会话历史
+ * Conversation (Short-term Memory) tool Schema definitions
+ * Used for tracking, searching, and compressing conversation history
  */
 export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   conversation_track: {
@@ -78,8 +78,8 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 };
 
 /**
- * Memory (Long-term Memory) 工具的 Schema 定义
- * 用于持久化存储和检索重要信息、偏好、事实等
+ * Memory (Long-term Memory) tool Schema definitions
+ * Used for persistent storage and retrieval of important information, preferences, facts, etc.
  */
 export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   memory_search: {

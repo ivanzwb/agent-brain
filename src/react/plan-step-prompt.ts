@@ -1,35 +1,35 @@
 // ============================================================
-// PlanStep ReAct Prompt 模板
+// PlanStep ReAct Prompt Template
 //
-// 用于 ReactLoop.runPlanStep() 中构建 system 和 user 消息。
-// 每个 PlanStep 是一个独立的 ReAct 循环（Thought→Action→Observation），
-// 模板引导模型遵循 ReAct 协议，聚焦当前步骤。
+// Used in ReactLoop.runPlanStep() to build system and user messages.
+// Each PlanStep is an independent ReAct loop (Thought→Action→Observation),
+// and the template guides the model to follow ReAct protocol, focusing on the current step.
 // ============================================================
 
 /**
- * 构建 PlanStep ReAct 循环的 system prompt。
+ * Build system prompt for PlanStep ReAct loop.
  *
- * 结构：
- *   1. 角色与行为协议（ReAct 循环规则）
- *   2. 执行计划概览（全局上下文）
- *   3. 当前步骤聚焦
- *   4. 可用资源（技能目录 + 记忆）
- *   5. 约束与终止条件
+ * Structure:
+ *   1. Role and behavior protocol (ReAct loop rules)
+ *   2. Execution plan overview (global context)
+ *   3. Current step focus
+ *   4. Available resources (skill catalog + memory)
+ *   5. Constraints and termination conditions
  */
 export function buildPlanStepSystemPrompt(params: {
-  /** 外层 systemPrompt（身份 + 通用指令） */
+  /** Outer systemPrompt (identity + general instructions) */
   baseSystemPrompt: string;
-  /** 思维模式引导 */
+  /** Thinking mode guidance */
   thinkingGuidance: string;
-  /** 整体执行计划文本 */
+  /** Overall execution plan text */
   planOverview: string;
-  /** 当前步骤 ID 和描述 */
+  /** Current step ID and description */
   currentStep: { id: string; description: string };
-  /** 技能目录文本（可能为空） */
+  /** Skill catalog text (may be empty) */
   skillCatalogText: string;
-  /** 技能缺口提示（可能为空） */
+  /** Skill gaps hint (may be empty) */
   skillGapsText: string;
-  /** 记忆上下文（可能为空） */
+  /** Memory context (may be empty) */
   memoryText: string;
 }): string {
   const {
@@ -44,40 +44,40 @@ export function buildPlanStepSystemPrompt(params: {
 
   const parts: string[] = [];
 
-  // ---- 1. 基础身份 ----
+  // ---- 1. Base Identity ----
   parts.push(baseSystemPrompt);
 
-  // ---- 2. ReAct 行为协议 ----
+  // ---- 2. ReAct Behavior Protocol ----
   parts.push('');
   parts.push(REACT_PROTOCOL);
 
-  // ---- 3. 思维模式 ----
+  // ---- 3. Thinking Mode ----
   parts.push('');
   parts.push(thinkingGuidance);
 
-  // ---- 4. 执行计划概览 ----
+  // ---- 4. Execution Plan Overview ----
   parts.push('');
   parts.push(planOverview);
 
-  // ---- 5. 当前步骤聚焦 ----
+  // ---- 5. Current Step Focus ----
   parts.push('');
   parts.push('[Current Step]');
   parts.push(`Step ${currentStep.id}: ${currentStep.description}`);
   parts.push('You are executing ONLY this step. Do not proceed to the next step.');
 
-  // ---- 6. 技能目录（动态） ----
+  // ---- 6. Skill Catalog (Dynamic) ----
   if (skillCatalogText) {
     parts.push('');
     parts.push(skillCatalogText);
   }
 
-  // ---- 7. 技能缺口 ----
+  // ---- 7. Skill Gaps ----
   if (skillGapsText) {
     parts.push('');
     parts.push(skillGapsText);
   }
 
-  // ---- 8. 记忆上下文 ----
+  // ---- 8. Memory Context ----
   if (memoryText) {
     parts.push('');
     parts.push('[Context from Memory]');
@@ -88,22 +88,22 @@ export function buildPlanStepSystemPrompt(params: {
 }
 
 /**
- * 构建 PlanStep ReAct 循环的 user 消息（首条 user message）。
+ * Build user message for PlanStep ReAct loop (first user message).
  *
- * 结构：
- *   1. 整体策略（一句话）
- *   2. 当前步骤目标
- *   3. 前置步骤输出（如有依赖）
- *   4. 行动指令
+ * Structure:
+ *   1. Overall strategy (one sentence)
+ *   2. Current step goal
+ *   3. Prior step outputs (if dependencies exist)
+ *   4. Action instructions
  */
 export function buildPlanStepUserPrompt(params: {
-  /** 整体策略 */
+  /** Overall strategy */
   strategy: string;
-  /** 当前步骤 */
+  /** Current step */
   currentStep: { id: string; description: string };
-  /** 前置步骤输出（已拼接的文本，可为空） */
+  /** Prior step outputs (concatenated text, may be empty) */
   priorContext: string;
-  /** 预期最终产出 */
+  /** Expected final output */
   expectedOutcome: string;
 }): string {
   const { strategy, currentStep, priorContext, expectedOutcome } = params;
@@ -131,7 +131,7 @@ export function buildPlanStepUserPrompt(params: {
 }
 
 // ============================================================
-// ReAct 行为协议 — 指导模型在每轮如何思考和行动
+// ReAct Behavior Protocol — Guides model how to think and act in each round
 // ============================================================
 
 const REACT_PROTOCOL = `[ReAct Protocol]

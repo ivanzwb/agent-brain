@@ -5,7 +5,7 @@ import type {
 } from '../types';
 
 // ============================================================
-// PromptBudget — 计算可用 token 预算并裁剪内容
+// PromptBudget - Calculate available token budget and trim content
 // ============================================================
 
 export class PromptBudget {
@@ -14,7 +14,7 @@ export class PromptBudget {
     private readonly contextSize: number,
   ) {}
 
-  /** 计算给定固定内容后，剩余多少 token 可用于可裁剪内容 */
+  /** Calculate remaining tokens available for trimmable content after fixed content */
   remaining(fixedMessages: Message[], tools?: ToolDefinition[]): number {
     let used = 0;
     for (const msg of fixedMessages) {
@@ -26,13 +26,13 @@ export class PromptBudget {
     return Math.max(0, this.contextSize - used);
   }
 
-  /** 将文本裁剪到不超过 maxTokens */
+  /** Trim text to not exceed maxTokens */
   trimText(text: string, maxTokens: number): string {
     if (maxTokens <= 0) return '';
     const tokens = this.counter.count(text);
     if (tokens <= maxTokens) return text;
 
-    // 按比例估算截断位置，逐步收紧
+    // Estimate truncation position by ratio, progressively tighten
     let ratio = maxTokens / tokens;
     let trimmed = text.slice(0, Math.floor(text.length * ratio));
     while (this.counter.count(trimmed) > maxTokens && trimmed.length > 0) {
@@ -43,8 +43,8 @@ export class PromptBudget {
   }
 
   /**
-   * 裁剪消息列表中较早的步骤。
-   * 保留前 keepFirst 条和后 keepLast 条消息，中间部分压缩为摘要。
+   * Trim early steps in message list.
+   * Keep first keepFirst and last keepLast messages, compress middle to summary.
    */
   trimMessages(
     messages: Message[],
@@ -58,7 +58,7 @@ export class PromptBudget {
     }
     if (total <= maxTokens) return messages;
 
-    // 保留头尾，压缩中间
+    // Keep head and tail, compress middle
     const head = messages.slice(0, keepFirst);
     const tail = messages.slice(-keepLast);
     const middle = messages.slice(keepFirst, messages.length - keepLast);

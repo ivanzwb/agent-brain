@@ -5,39 +5,39 @@ import {
 } from './types';
 
 // ============================================================
-// 每个认知阶段的思维模式权重配比
+// Thinking mode weight ratios for each cognitive phase
 // ============================================================
 
 const WEIGHT_TABLE: Record<CognitivePhase, ThinkingModeWeights> = {
-  // 理解任务：以共情为主（理解对方真正想要什么），逻辑辅助
+  // Understand task: empathy primary (understand what they really want), logic secondary
   [CognitivePhase.PERCEIVE]: {
     [ThinkingMode.CREATIVE]: 0.10,
     [ThinkingMode.LOGICAL]: 0.25,
     [ThinkingMode.EMPATHETIC]: 0.50,
     [ThinkingMode.STRUCTURAL]: 0.15,
   },
-  // 评估能力：以逻辑为主（客观判断），结构辅助
+  // Assess capability: logic primary (objective judgment), structural secondary
   [CognitivePhase.ASSESS]: {
     [ThinkingMode.CREATIVE]: 0.05,
     [ThinkingMode.LOGICAL]: 0.45,
     [ThinkingMode.EMPATHETIC]: 0.10,
     [ThinkingMode.STRUCTURAL]: 0.40,
   },
-  // 分解规划：以结构为主（拆解任务），创造力辅助
+  // Plan and decompose: structural primary (break down task), creativity secondary
   [CognitivePhase.PLAN]: {
     [ThinkingMode.CREATIVE]: 0.20,
     [ThinkingMode.LOGICAL]: 0.25,
     [ThinkingMode.EMPATHETIC]: 0.05,
     [ThinkingMode.STRUCTURAL]: 0.50,
   },
-  // 执行监控：以逻辑为主（严谨执行），按需创造
+  // Execute and monitor: logic primary (rigorous execution), creativity as needed
   [CognitivePhase.EXECUTE]: {
     [ThinkingMode.CREATIVE]: 0.15,
     [ThinkingMode.LOGICAL]: 0.50,
     [ThinkingMode.EMPATHETIC]: 0.10,
     [ThinkingMode.STRUCTURAL]: 0.25,
   },
-  // 反思优化：逻辑+共情并重（客观评估+感受质量）
+  // Reflect and optimize: balanced logic + empathy (objective evaluation + quality feeling)
   [CognitivePhase.REFLECT]: {
     [ThinkingMode.CREATIVE]: 0.15,
     [ThinkingMode.LOGICAL]: 0.35,
@@ -47,11 +47,11 @@ const WEIGHT_TABLE: Record<CognitivePhase, ThinkingModeWeights> = {
 };
 
 // ============================================================
-// 每个认知阶段的系统提示词引导
+// System prompt guidance for each cognitive phase
 // ============================================================
 
 const PHASE_PROMPTS: Record<CognitivePhase, string> = {
-  [CognitivePhase.PERCEIVE]: `You are in the PERCEIVE phase (理解任务).
+  [CognitivePhase.PERCEIVE]: `You are in the PERCEIVE phase (Understand Task).
 Your goal: Deeply understand the task before doing anything.
 - Identify the surface request vs. the true underlying intent
 - Spot ambiguities — what is unclear or assumed?
@@ -61,7 +61,7 @@ Your goal: Deeply understand the task before doing anything.
 Respond in JSON:
 {"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[]}`,
 
-  [CognitivePhase.ASSESS]: `You are in the ASSESS phase (评估能力与资源).
+  [CognitivePhase.ASSESS]: `You are in the ASSESS phase (Evaluate Capabilities & Resources).
 Your goal: Think from the TASK's perspective first, then check what you have.
 
 Step 1 — What does the task NEED? (task-driven, regardless of what you have)
@@ -82,7 +82,7 @@ Step 3 — Gap analysis
 Respond in JSON:
 {"requiredSkills":[],"capabilityMatch":"...","matchedSkills":[],"missingSkills":[],"risks":[],"complexity":"simple|moderate|complex","feasible":true,"gaps":[]}`,
 
-  [CognitivePhase.PLAN]: `You are in the PLAN phase (分解与规划).
+  [CognitivePhase.PLAN]: `You are in the PLAN phase (Decompose & Plan).
 Your goal: Create a concrete execution plan.
 - Break the task into clear, ordered steps
 - Each step should be actionable (can be done with available tools or reasoning)
@@ -95,7 +95,7 @@ Your goal: Create a concrete execution plan.
 Respond in JSON:
 {"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}`,
 
-  [CognitivePhase.EXECUTE]: `You are in the EXECUTE phase (执行与监控).
+  [CognitivePhase.EXECUTE]: `You are in the EXECUTE phase (Execute & Monitor).
 Your goal: Execute the plan step by step using available tools.
 - Follow the plan, but adapt when you encounter unexpected situations
 - Monitor your own progress — are you on track?
@@ -104,7 +104,7 @@ Your goal: Execute the plan step by step using available tools.
 - After acquiring new skills, their tools become available immediately — use them
 - When all plan steps are complete, respond WITHOUT a tool call to signal completion`,
 
-  [CognitivePhase.REFLECT]: `You are in the REFLECT phase (反思与优化).
+  [CognitivePhase.REFLECT]: `You are in the REFLECT phase (Reflect & Optimize).
 Your goal: Evaluate the work that was done, learn from it, and decide next steps.
 
 Result evaluation:
@@ -128,14 +128,14 @@ Respond in JSON:
 };
 
 // ============================================================
-// 思维模式描述
+// Thinking mode descriptions
 // ============================================================
 
 const MODE_NAMES: Record<ThinkingMode, string> = {
-  [ThinkingMode.CREATIVE]: '创造性思维 (Creative)',
-  [ThinkingMode.LOGICAL]: '逻辑性思维 (Logical)',
-  [ThinkingMode.EMPATHETIC]: '情感洞察 (Empathetic)',
-  [ThinkingMode.STRUCTURAL]: '结构规划 (Structural)',
+  [ThinkingMode.CREATIVE]: 'Creative Thinking',
+  [ThinkingMode.LOGICAL]: 'Logical Thinking',
+  [ThinkingMode.EMPATHETIC]: 'Empathetic Insight',
+  [ThinkingMode.STRUCTURAL]: 'Structural Planning',
 };
 
 const MODE_DESCRIPTIONS: Record<ThinkingMode, string> = {

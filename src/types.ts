@@ -5,33 +5,33 @@ import { CronHub } from './cron/cron-hub';
 import { SkillHub } from './skill/skill-hub';
 
 // ============================================================
-// 认知阶段 — 模拟人类思考的五阶段
+// Cognitive Phases - Five-stage human-like thinking process
 // ============================================================
 
 /**
- * 人类面对任何任务时的五个认知阶段：
+ * Five cognitive phases simulating human thinking:
  *
  *   PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
- *   理解任务    评估能力   分解规划  执行监控   反思优化
+ *   Understand   Evaluate  Plan     Execute   Reflect
  *
- * 简单任务：五阶段快速流过（秒级）
- * 复杂任务：EXECUTE 内部迭代，REFLECT 可能触发回到 PLAN 修正
+ * Simple tasks: rapid flow through all phases (seconds)
+ * Complex tasks: EXECUTE iterates internally, REFLECT may trigger replanning
  */
 export enum CognitivePhase {
-  /** 理解任务：接收信息、识别意图、澄清模糊点 */
+  /** PERCEIVE: Receive information, identify intent, clarify ambiguities */
   PERCEIVE = 'PERCEIVE',
-  /** 评估能力与资源：知识匹配、资源盘点、风险判断 */
+  /** ASSESS: Evaluate capabilities and resources, match knowledge, assess risks */
   ASSESS = 'ASSESS',
-  /** 分解与规划：任务分解、设定目标、制定计划 */
+  /** PLAN: Decompose task, set goals, create execution plan */
   PLAN = 'PLAN',
-  /** 执行与监控：按计划行动、实时调整、自我监控 */
+  /** EXECUTE: Execute plan, monitor progress, make real-time adjustments */
   EXECUTE = 'EXECUTE',
-  /** 反思与优化：结果评估、经验积累、教训总结 */
+  /** REFLECT: Evaluate results, accumulate experience, summarize lessons */
   REFLECT = 'REFLECT',
 }
 
 // ============================================================
-// ReAct 内循环阶段（EXECUTE 阶段内部使用）
+// ReAct Inner Loop Phases (used within EXECUTE phase)
 // ============================================================
 
 export enum StepPhase {
@@ -41,7 +41,7 @@ export enum StepPhase {
 }
 
 // ============================================================
-// 其他枚举
+// Other Enums
 // ============================================================
 
 export enum TaskStatus {
@@ -54,13 +54,13 @@ export enum TaskStatus {
 }
 
 export enum ThinkingMode {
-  /** 发散：产生新颖想法、建立意外联系 */
+  /** CREATIVE: Generate novel ideas, explore multiple possibilities */
   CREATIVE = 'CREATIVE',
-  /** 收敛：推理因果、验证一致性 */
+  /** LOGICAL: Reason about cause and effect, verify consistency */
   LOGICAL = 'LOGICAL',
-  /** 共情：理解情绪、审美偏好与深层需求 */
+  /** EMPATHETIC: Understand emotions, aesthetic preferences, deep needs */
   EMPATHETIC = 'EMPATHETIC',
-  /** 工程：分解任务、管理依赖与资源 */
+  /** STRUCTURAL: Decompose tasks, manage dependencies and resources */
   STRUCTURAL = 'STRUCTURAL',
 }
 
@@ -113,88 +113,88 @@ export interface StepLog {
 }
 
 // ============================================================
-// 五阶段认知产物
+// Five-Phase Cognitive Artifacts
 // ============================================================
 
-/** PERCEIVE 阶段产出：对任务的深度理解 */
+/** PERCEIVE phase output: deep understanding of the task */
 export interface Perception {
-  /** 表层需求 */
+  /** Surface-level request */
   surfaceRequest: string;
-  /** 深层意图 */
+  /** True underlying intent */
   deepIntent: string;
-  /** 识别出的约束条件 */
+  /** Identified constraints */
   constraints: string[];
-  /** 未澄清的模糊点 */
+  /** Unclarified ambiguities */
   ambiguities: string[];
-  /** 成功标准 */
+  /** Success criteria */
   successCriteria: string[];
 }
 
-/** ASSESS 阶段产出：自我能力评估 */
+/** ASSESS phase output: self-capability assessment */
 export interface Assessment {
-  /** 任务所需的知识与技能（从任务出发，与自身有无无关） */
+  /** Skills and knowledge required by the task */
   requiredSkills: string[];
-  /** 可用工具/技能与任务的匹配度描述 */
+  /** Description of tool/skill match with the task */
   capabilityMatch: string;
-  /** 匹配到的可用技能（名称列表） */
+  /** List of matched available skills */
   matchedSkills: string[];
-  /** 任务所需但当前缺失的技能 */
+  /** Skills required but currently missing */
   missingSkills: string[];
-  /** 识别出的风险 */
+  /** Identified risks */
   risks: string[];
-  /** 判定的任务复杂度 */
+  /** Assessed task complexity */
   complexity: 'simple' | 'moderate' | 'complex';
-  /** 是否有能力完成 */
+  /** Whether the task is feasible to complete */
   feasible: boolean;
-  /** 如果不完全可行，缺什么 */
+  /** Gaps if not fully feasible */
   gaps: string[];
 }
 
-/** PLAN 阶段产出：执行计划 */
+/** PLAN phase output: execution plan */
 export interface Plan {
-  /** 整体策略描述 */
+  /** Overall strategy description */
   strategy: string;
-  /** 有序的步骤列表 */
+  /** Ordered list of steps */
   steps: PlanStep[];
-  /** 预期最终产出 */
+  /** Expected final outcome */
   expectedOutcome: string;
 }
 
 export interface PlanStep {
   id: string;
   description: string;
-  /** 依赖的前置步骤 ID */
+  /** IDs of prerequisite steps */
   dependsOn: string[];
 }
 
-/** 单个计划步骤的执行结果 */
+/** Execution result for a single plan step */
 export interface PlanStepResult {
-  /** 对应的计划步骤 ID */
+  /** Corresponding plan step ID */
   stepId: string;
-  /** 该步骤的 ReAct 迭代日志 */
+  /** ReAct iteration logs for this step */
   steps: StepLog[];
-  /** 该步骤的最终输出（作为后续步骤的输入） */
+  /** Final output of this step (used as input for subsequent steps) */
   output?: string;
-  /** 终止原因 */
+  /** Termination reason */
   terminationReason: TerminationReason;
 }
 
-/** REFLECT 阶段产出：反思记录 */
+/** REFLECT phase output: reflection record */
 export interface Reflection {
-  /** 结果是否达到预期 */
+  /** Whether result met the goal */
   goalMet: boolean;
-  /** 做得好的方面 */
+  /** What went well */
   strengths: string[];
-  /** 可改进的方面 */
+  /** Areas for improvement */
   improvements: string[];
-  /** 总结的经验教训（可存入长期记忆） */
+  /** Lessons learned (can be stored in long-term memory) */
   lessonsLearned: string[];
-  /** 是否需要重新规划 */
+  /** Whether replanning is needed */
   needsReplan: boolean;
 }
 
 // ============================================================
-// 思维模式权重
+// Thinking Mode Weights
 // ============================================================
 
 export interface ThinkingModeWeights {
@@ -217,7 +217,7 @@ export interface ExecuteResult {
   status: TaskStatus;
   finalAnswer?: string;
   steps: StepLog[];
-  /** 每个计划步骤的独立执行结果 */
+  /** Independent execution results for each plan step */
   planStepResults: PlanStepResult[];
   terminationReason: TerminationReason;
 }
@@ -229,9 +229,9 @@ export interface TaskResult {
   terminationReason: TerminationReason;
   steps: StepLog[];
   durationMs: number;
-  /** token 使用量统计 */
+  /** Token usage statistics */
   tokenUsage: TokenUsage;
-  /** 完整的认知过程记录 */
+  /** Complete cognitive process record */
   cognition: {
     perception: Perception;
     assessment: Assessment;
@@ -246,12 +246,12 @@ export interface TaskResult {
 
 export interface AgentConfig {
   systemPrompt: string;
-  /** 模型上下文窗口大小（token 数） */
+  /** Model context window size in tokens */
   modelContextSize: number;
   maxSteps?: number;
   heartbeatTimeoutMs?: number;
   maxConsecutiveFailures?: number;
-  /** REFLECT 触发重规划的最大次数 */
+  /** Maximum number of replans triggered by REFLECT */
   maxReplans?: number;
 }
 
@@ -269,32 +269,32 @@ export function resolveConfig(
 }
 
 // ============================================================
-// Token 计数 — 用于统计和 prompt 裁剪
+// Token Counting - Used for statistics and prompt trimming
 // ============================================================
 
-/** Token 计数器，由外部实现（不同模型的 tokenizer 不同） */
+/** Token counter implemented by external code (tokenizers vary by model) */
 export interface ITokenCounter {
-  /** 计算文本的 token 数 */
+  /** Count tokens in text */
   count(text: string): number;
-  /** 计算一组工具声明的 token 数 */
+  /** Count tokens in a set of tool definitions */
   countTools(tools: ToolDefinition[]): number;
 }
 
-/** 单次任务的 token 使用量统计 */
+/** Token usage statistics for a single task */
 export interface TokenUsage {
-  /** 输入 token 总数（所有 LLM 调用的 prompt token 累计） */
+  /** Total input tokens (cumulative prompt tokens from all LLM calls) */
   promptTokens: number;
-  /** 输出 token 总数（所有 LLM 调用的 completion token 累计） */
+  /** Total output tokens (cumulative completion tokens from all LLM calls) */
   completionTokens: number;
-  /** 总计 */
+  /** Total tokens */
   totalTokens: number;
 }
 
 // ============================================================
-// Framework Contracts — 用户需要实现的接口
+// Framework Contracts - Interfaces to be implemented by users
 // ============================================================
 
-/** LLM 客户端，支持 tool/function calling，同时提供 token 计数能力 */
+/** LLM client supporting tool/function calling and token counting */
 export interface IModelClient extends ITokenCounter {
   chat(
     messages: Message[],
@@ -304,8 +304,8 @@ export interface IModelClient extends ITokenCounter {
 
 
 /**
- * 工具提供者：提供一组工具定义及其执行能力。
- * 用于天生工具（InnateToolHub）等系统内建工具。
+ * Tool provider: provides tool definitions and execution capability.
+ * Used for innate tools (InnateToolHub) and other system-built-in tools.
  */
 export interface IHub {
    getToolDefinition(toolName: string): ToolDefinition | undefined;
@@ -313,23 +313,23 @@ export interface IHub {
 }
 
 
-/** 可选的事件发布者，用于可观测性 */
+/** Optional event publisher for observability */
 export interface IEventPublisher {
   publish(type: string, payload: unknown): void;
 }
 
 // ============================================================
-// AgentBrain 初始化选项
+// AgentBrain Initialization Options
 // ============================================================
 
 export interface AgentBrainOptions {
   model: IModelClient;
   memory: MemoryHub;
-  /** 知识库（可选，用于存储和检索结构化知识文档） */
+  /** Knowledge hub (optional, for storing and retrieving structured knowledge documents) */
   knowledge?: KnowledgeHub;
-  /** 定时任务中心（可选，用于调度和管理后台任务） */
+  /** Cron hub (optional, for scheduling and managing background tasks) */
   cron?: CronHub;
-  /** 技能中心（统一管理动态安装的技能包） */
+  /** Skill hub (unified management of dynamically installed skill packages) */
   skills: SkillHub;
   config: AgentConfig;
   eventPublisher?: IEventPublisher;

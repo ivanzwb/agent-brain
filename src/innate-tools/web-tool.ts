@@ -257,7 +257,7 @@ export class HttpFetchHtmlTool implements InnateTool {
 
     const html = typeof result.data === 'string' ? result.data : String(result.data);
 
-    // 提取纯文本，移除所有 HTML 标签
+    // Extract plain text, remove all HTML tags
     let text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -265,7 +265,7 @@ export class HttpFetchHtmlTool implements InnateTool {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // 限制文本长度
+    // Limit text length
     text = text.substring(0, 8000);
 
     const response: Record<string, any> = {
@@ -319,7 +319,7 @@ export class WebSearchTool implements InnateTool {
     const query = args['query'] as string;
     const limit = (args['limit'] as number) || 5;
 
-    // 使用 DuckDuckGo HTML 搜索（更可靠，无反爬虫）
+    // Use DuckDuckGo HTML search (more reliable, no anti-scraping)
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 
     const result = await fetchUrl(searchUrl, {
@@ -336,7 +336,7 @@ export class WebSearchTool implements InnateTool {
     const html = typeof result.data === 'string' ? result.data : String(result.data);
     const results: any[] = [];
 
-    // DuckDuckGo HTML 结果解析
+    // DuckDuckGo HTML result parsing
     const resultRegex = /<a class="result__a" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
 
     let match;
@@ -357,7 +357,7 @@ export class WebSearchTool implements InnateTool {
     }
 
     if (results.length === 0) {
-      // 备用解析方式
+      // Alternative parsing method
       const altRegex = /<result[^>]*>[\s\S]*?href="([^"]+)"[^>]*>([\s\S]*?)<\/result>/gi;
       let altMatch;
       while ((altMatch = altRegex.exec(html)) !== null && results.length < limit) {
@@ -372,7 +372,7 @@ export class WebSearchTool implements InnateTool {
       }
     }
 
-    // 限制返回大小
+    // Limit return size
     const summary = results.slice(0, limit).map(r => `${r.title}\n${r.url}\n${r.snippet || ''}`).join('\n---\n');
     const truncated = summary.length > 2000 ? summary.substring(0, 2000) + '...(truncated)' : summary;
 
@@ -405,7 +405,7 @@ export class WebScrapeTool implements InnateTool {
 
     const html = typeof result.data === 'string' ? result.data : String(result.data);
 
-    // 默认提取纯文本
+    // Default extract plain text
     let text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')

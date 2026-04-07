@@ -6,7 +6,7 @@ import type {
 } from '../types';
 
 // ============================================================
-// TokenTracker — 累计统计 token 使用量
+// TokenTracker - Accumulate and track token usage
 // ============================================================
 
 export class TokenTracker {
@@ -15,7 +15,7 @@ export class TokenTracker {
 
   constructor(private readonly counter: ITokenCounter) {}
 
-  /** 记录一次 LLM 调用的 prompt token */
+  /** Track prompt tokens for one LLM call */
   trackPrompt(messages: Message[], tools?: ToolDefinition[]): void {
     let tokens = 0;
     for (const msg of messages) {
@@ -27,7 +27,7 @@ export class TokenTracker {
     this._promptTokens += tokens;
   }
 
-  /** 记录一次 LLM 调用的 completion token */
+  /** Track completion tokens for one LLM call */
   trackCompletion(content: string): void {
     this._completionTokens += this.counter.count(content);
   }

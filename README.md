@@ -1,8 +1,8 @@
 # @biosbot/agent-brain
 
-> Agent ReAct 框架 - 五阶段认知循环 + 嵌套 ReAct 执行环
+Agentic AI framework for building autonomous LLM agents with a human-like cognitive architecture. Features a five-phase cognitive cycle (PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT), nested ReAct loops, dynamic skill acquisition, four thinking modes, token budget management, and memory-augmented execution.
 
-Agent ReAct framework with cognitive planning engine — five-phase cognitive cycle with nested ReAct loops, dynamic skill acquisition, and interactive user input.
+English | [中文](./README.zh-CN.md)
 
 ## 🔹 Core Features
 

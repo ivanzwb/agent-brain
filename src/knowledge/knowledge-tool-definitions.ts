@@ -1,8 +1,8 @@
 import { ToolDefinition } from '../innate-tools/types';
 
 /**
- * Knowledge Base 工具的 Schema 定义
- * 用于管理和查询结构化的知识文档
+ * Knowledge Base tool Schema definitions
+ * Used for managing and querying structured knowledge documents
  */
 export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   knowledge_list: {
@@ -13,7 +13,7 @@ export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       properties: {
         category: { 
           type: 'string', 
-          description: 'Optional filter: only show entries in this category (e.g., "技术", "文档", "FAQ", "案例")' 
+          description: 'Optional filter: only show entries in this category (e.g., "tech", "docs", "FAQ", "case")' 
         },
         limit: { 
           type: 'number', 
@@ -45,16 +45,16 @@ export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
         },
         category: { 
           type: 'string', 
-          description: 'Category tag for organizing knowledge (e.g., "技术", "文档", "FAQ", "案例", "产品"). Helps with filtering during retrieval.' 
+          description: 'Category tag for organizing knowledge (e.g., "tech", "docs", "FAQ", "case", "product"). Helps with filtering during retrieval.' 
         },
         tags: { 
           type: 'array', 
           items: { type: 'string' },
-          description: 'Optional tags for more granular organization (e.g., ["api", "rest", "认证", "v2"]). Useful for targeted searches.' 
+          description: 'Optional tags for more granular organization (e.g., ["api", "rest", "auth", "v2"]). Useful for targeted searches.' 
         },
         metadata: { 
           type: 'object', 
-          description: 'Optional additional metadata as key-value pairs (e.g., { "author": "张三", "version": "1.0", "lastUpdated": "2024-01-01" }). Can store any custom fields.' 
+          description: 'Optional additional metadata as key-value pairs (e.g., { "author": "John", "version": "1.0", "lastUpdated": "2024-01-01" }). Can store any custom fields.' 
         },
       },
       required: ['title', 'content'],

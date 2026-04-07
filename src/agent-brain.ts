@@ -91,7 +91,7 @@ function generateTaskId(): string {
 }
 
 // ============================================================
-// AgentBrain — 五阶段认知循环协调器
+// AgentBrain — Five-phase cognitive loop coordinator
 //
 //   PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 //                          ↑                  │
@@ -145,7 +145,7 @@ export class AgentBrain {
 
     this.innateToolHub.register(new AskUserTool(this.innateToolHub));
 
-    // 文件系统工具
+    // File system tools
     this.innateToolHub.register(new FSReadTool());
     this.innateToolHub.register(new FSWriteTool());
     this.innateToolHub.register(new FSEditTool());
@@ -157,21 +157,21 @@ export class AgentBrain {
     this.innateToolHub.register(new FSSearchTool());
     this.innateToolHub.register(new FSGrepTool());
 
-    // 命令执行工具
+    // Command execution tools
     this.innateToolHub.register(new CmdExecTool());
     this.innateToolHub.register(new CmdRunTool());
     this.innateToolHub.register(new CmdKillTool());
     this.innateToolHub.register(new CmdBgTool());
     this.innateToolHub.register(new CmdListTool());
 
-    // 网络工具
+    // Network tools
     this.innateToolHub.register(new HttpGetTool());
     this.innateToolHub.register(new HttpPostTool());
     this.innateToolHub.register(new HttpFetchHtmlTool());
     this.innateToolHub.register(new WebSearchTool());
     this.innateToolHub.register(new WebScrapeTool());
 
-    // 定时任务工具
+    // Scheduled task tools
     const cronHub = opts.cron;
     if (cronHub) {
       this.innateToolHub.register(new CronListTool(cronHub));
@@ -208,7 +208,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // 公共入口
+  // Public Entry Point
   // ===========================================================
 
   async run(userInput: string): Promise<TaskResult> {
@@ -220,7 +220,7 @@ export class AgentBrain {
     await this.memory.conversation_track(taskId, 'user', userInput);
 
     try {
-      // ---- 记忆检索：在理解任务前先回忆相关经验 ----
+      // ---- Memory retrieval: recall relevant experience before understanding task ----
       const memoryResult = await this.memory.memory_search({ query: userInput, topK: 3 });
       const memoryData = JSON.parse(memoryResult);
       const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
@@ -233,7 +233,7 @@ export class AgentBrain {
       const assessment = await this.assess(userInput, perception, tracker);
       this.emit('phase:assess', { taskId, assessment });
 
-      // 如果判定不可行，提前返回
+      // If assessed as not feasible, return early
       if (!assessment.feasible) {
         const answer = `I assessed this task and determined it's not feasible. Gaps: ${assessment.gaps.join('; ')}`;
         return this.buildTaskResult(taskId, startTime, tracker, {
@@ -245,7 +245,7 @@ export class AgentBrain {
         });
       }
 
-      // ---- Phase 3-5: PLAN → EXECUTE → REFLECT (可循环) ----
+      // ---- Phase 3-5: PLAN → EXECUTE → REFLECT (can loop) ----
       let plan: Plan | undefined;
       let executeResult: ExecuteResult | undefined;
       let reflection: Reflection | undefined;
@@ -300,7 +300,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 1: PERCEIVE — 理解任务
+  // Phase 1: PERCEIVE — Understand task
   // ===========================================================
 
   private async perceive(userInput: string, memoryText: string, tracker: TokenTracker): Promise<Perception> {
@@ -308,14 +308,14 @@ export class AgentBrain {
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
 
-    // 构建固定部分
+    // Build fixed parts
     const systemBase = [this.config.systemPrompt, '', guidance, '', phasePrompt].join('\n');
     const baseMessages: Message[] = [
       { role: 'system', content: systemBase },
       { role: 'user', content: userInput },
     ];
 
-    // 计算记忆可用预算，按需裁剪
+    // Calculate memory available budget, trim as needed
     if (memoryText) {
       const available = this.budget.remaining(baseMessages);
       const trimmedMemory = this.budget.trimText(memoryText, available);
@@ -332,7 +332,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 2: ASSESS — 评估能力与资源
+  // Phase 2: ASSESS — Evaluate capabilities and resources
   // ===========================================================
 
   private async assess(userInput: string, perception: Perception, tracker: TokenTracker): Promise<Assessment> {
@@ -340,9 +340,9 @@ export class AgentBrain {
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
 
-    // 天生工具
+    // Innate tools
     const innateTools: string[] = this.innateToolHub.getToolsDescription();
-    // 已有技能包
+    // Pre-installed skill packages
     const skillSummaries: string[] = this.skillHub.getSkillsDescription();
 
     const parts: string[] = [];
@@ -370,7 +370,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 3: PLAN — 分解与规划
+  // Phase 3: PLAN — Decompose and plan
   // ===========================================================
 
   private async plan(
@@ -413,7 +413,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 4: EXECUTE — 执行与监控
+  // Phase 4: EXECUTE — Execute and monitor
   // ===========================================================
 
   private async execute(
@@ -453,7 +453,7 @@ export class AgentBrain {
   }
 
   // ===========================================================
-  // Phase 5: REFLECT — 反思与优化
+  // Phase 5: REFLECT — Reflect and optimize
   // ===========================================================
 
   private async reflect(
@@ -467,7 +467,7 @@ export class AgentBrain {
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
 
-    // 构建执行摘要
+    // Build execution summary
     const executionSummary = [
       `Status: ${executeResult.status}`,
       `Steps taken: ${executeResult.steps.length}`,
@@ -493,7 +493,7 @@ export class AgentBrain {
 
   private parseJson<T>(raw: string, fallback: T): T {
     try {
-      // 尝试从 markdown code block 中提取 JSON
+      // Try to extract JSON from markdown code block
       const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
       const jsonStr = match ? match[1].trim() : raw.trim();
       return JSON.parse(jsonStr) as T;
