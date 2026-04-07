@@ -72,22 +72,23 @@ Note: "fastPlan" is required when complexity is "simple", omit when "complex".`,
 Your goal: Think from the TASK's perspective first, then check what you have.
 
 Step 1 — What does the task NEED? (task-driven, regardless of what you have)
-- What domain knowledge is required? (e.g., security audit methodology, data analysis)
-- What operational skills are required? (e.g., database querying, report generation)
+- What domain knowledge is required? (e.g., security audit, data analysis, content summarization)
+- What operational skills are required? (e.g., database querying, report generation, conversation analysis)
 - What external resources are needed? (e.g., historical data, templates)
 
 Step 2 — What do you HAVE?
-- Innate tools: system defaults you can use directly without any domain knowledge
 - Skill packages: each provides domain knowledge + scenarios + tools — most tools only make sense combined with the right skill
-- Innate skill — acquiring new skills: you can search/install skill packages at execution time
+- Innate tools: system defaults you can use directly without any domain knowledge
 
 Step 3 — Gap analysis
-- Which required skills are matched by available skill packages?
-- Which required skills are missing? (could be acquired during execution via innate skill)
+- Group required skills into broader CATEGORIES
+- List skill categories needed (e.g., "summarization", "financial analysis")
+- Which skill categories can be matched by available skills?
+- Which skill categories are missing?
 - What are the risks and overall complexity?
 
 Respond in JSON:
-{"requiredSkills":[],"capabilityMatch":"...","matchedSkills":[],"missingSkills":[],"risks":[],"complexity":"simple|moderate|complex","feasible":true,"gaps":[]}`,
+{"capabilityMatch":"...", "skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":"simple|moderate|complex","feasible":true}`,
 
   [CognitivePhase.PLAN]: `You are in the PLAN phase (Decompose & Plan).
 Your goal: Create a concrete execution plan.
@@ -95,9 +96,11 @@ Your goal: Create a concrete execution plan.
 - Each step should be actionable (can be done with available tools or reasoning)
 - Identify dependencies between steps
 - Simple tasks may need just 1-2 steps; don't over-plan
-- IMPORTANT: If the assessment identified MISSING SKILLS, include steps to acquire them
-  (search for and install the needed skill packages) BEFORE the steps that depend on them.
-  Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
+- IMPORTANT: For tasks requiring EXTERNAL DATA (stock prices, news, research, APIs), ALWAYS search for skills FIRST
+  - Use skill_find to find specialized skills (e.g., "stock_data", "financial_analysis")
+  - Install the best matching skill BEFORE using innate tools
+  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK 
+- Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
 
 Respond in JSON:
 {"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}`,
@@ -106,7 +109,9 @@ Respond in JSON:
 Your goal: Execute the plan step by step using available tools.
 - Follow the plan, but adapt when you encounter unexpected situations
 - Monitor your own progress — are you on track?
-- If a tool fails, try an alternative approach before giving up
+- CRITICAL: For tasks needing external data (stock prices, news, APIs), ALWAYS check available skills FIRST
+  - Use skill tools from acquired skill packages when available
+  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK 
 - If you discover you need a skill you don't have, use innate skills (skill_find, skill_install) to acquire it
 - After acquiring new skills, their tools become available immediately — use them
 - When all plan steps are complete, respond WITHOUT a tool call to signal completion`,

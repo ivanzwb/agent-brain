@@ -524,7 +524,7 @@ export class AgentBrain {
   }
 
   private emptyAssessment(): Assessment {
-    return { requiredSkills: [], capabilityMatch: '', matchedSkills: [], missingSkills: [], risks: [], complexity: 'simple', feasible: true, gaps: [] };
+    return { skillCategories: [], capabilityMatch: '', matchedSkillCategories: [], missingSkillCategories: [], risks: [], complexity: 'simple', feasible: true };
   }
 
   private emptyPlan(): Plan {

@@ -137,22 +137,20 @@ export interface Perception {
 
 /** ASSESS phase output: self-capability assessment */
 export interface Assessment {
-  /** Skills and knowledge required by the task */
-  requiredSkills: string[];
+  /** Skill categories required (broader groupings, e.g., "summarization") */
+  skillCategories: string[];
   /** Description of tool/skill match with the task */
   capabilityMatch: string;
-  /** List of matched available skills */
-  matchedSkills: string[];
-  /** Skills required but currently missing */
-  missingSkills: string[];
+  /** Skill categories that are matched by available skills */
+  matchedSkillCategories: string[];
+  /** Skill categories that are required but currently missing */
+  missingSkillCategories: string[];
   /** Identified risks */
   risks: string[];
   /** Assessed task complexity */
   complexity: 'simple' | 'moderate' | 'complex';
   /** Whether the task is feasible to complete */
   feasible: boolean;
-  /** Gaps if not fully feasible */
-  gaps: string[];
 }
 
 /** PLAN phase output: execution plan */

@@ -109,7 +109,13 @@ function runAgent(userInput: string): void {
       askTask();
     })
     .catch((err) => {
-      console.error('❌ 执行出错:', String(err));
+      console.error('❌ 执行出错:');
+      console.log('\n' + '='.repeat(60));
+      console.log('📊 状态: FAILED');
+      console.log('='.repeat(60));
+      console.log('\n📝 回答:\n');
+      console.log(`Unrecoverable error: ${String(err)}`);
+      console.log();
       state = 'idle';
       askTask();
     });

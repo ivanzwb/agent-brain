@@ -221,13 +221,13 @@
 
 ```json
 {
-  "capabilityMatch": "需要安全审计分析能力和报告生成能力，当前具备数据分析技能但缺少安全审计领域的专业知识",
-  "matchedSkills": ["data-analysis", "chart-generation", "file-management"],
-  "missingSkills": ["security-audit-knowledge"],
+  "capabilityMatch": "需要安全审计和报告生成能力，当前具备数据分析和文件管理技能",
+  "skillCategories": ["security-audit", "report-generation"],
+  "matchedSkillCategories": ["data-analysis", "file-management"],
+  "missingSkillCategories": ["security-audit"],
   "risks": ["缺少安全审计领域知识可能导致专业术语使用不当", "历史数据不完整可能影响趋势分析"],
   "complexity": "moderate",
-  "feasible": true,
-  "gaps": ["安全审计领域的专业术语和标准框架"]
+  "feasible": true
 }
 ```
 

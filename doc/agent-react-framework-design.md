@@ -234,13 +234,13 @@ For simple tasks, the output also includes `fastPlan`:
 
 ```json
 {
-  "capabilityMatch": "Requires security audit analysis and report generation capabilities; currently has data analysis skills but lacks professional knowledge in the security audit domain",
-  "matchedSkills": ["data-analysis", "chart-generation", "file-management"],
-  "missingSkills": ["security-audit-knowledge"],
+  "capabilityMatch": "Requires security audit and report generation; currently has data analysis and file management skills",
+  "skillCategories": ["security-audit", "report-generation"],
+  "matchedSkillCategories": ["data-analysis", "file-management"],
+  "missingSkillCategories": ["security-audit"],
   "risks": ["Lack of security audit domain knowledge may lead to improper use of professional terminology", "Incomplete historical data may affect trend analysis"],
   "complexity": "moderate",
-  "feasible": true,
-  "gaps": ["Professional terminology and standard frameworks in the security audit domain"]
+  "feasible": true
 }
 ```
 

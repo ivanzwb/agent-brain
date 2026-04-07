@@ -243,7 +243,7 @@ export class ReactLoop {
       if (this.innateToolHub.hasTool(call.name)) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
-          const userResponse = call.arguments['question'] + ' -> ' + observation;
+          const userResponse = 'Observation -> ' + observation;
           await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const skillName: string = call.arguments['skillName'] as string;

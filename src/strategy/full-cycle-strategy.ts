@@ -22,7 +22,7 @@ export class FullCycleStrategy implements ExecutionStrategy {
     ops.emit('phase:assess', { taskId, assessment });
 
     if (!assessment.feasible) {
-      const answer = `I assessed this task and determined it's not feasible. Gaps: ${assessment.gaps.join('; ')}`;
+      const answer = `I assessed this task and determined it's not feasible. Missing skills: ${assessment.missingSkillCategories.join(', ')}`;
       return ops.buildResult(taskId, startTime, tracker, {
         status: TaskStatus.FAILED,
         terminationReason: TerminationReason.COMPLETED,
