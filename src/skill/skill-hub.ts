@@ -10,9 +10,11 @@ import type { ToolDefinition } from '../innate-tools/types';
 // ============================================================
 
 export interface SkillHub extends IHub {
-    /** List all installed skills */
+    /** Find skills from the online registry by keyword */
+    skill_find(args: Record<string, unknown>): Promise<string>;
+    /** List all locally installed skills */
     skill_list(args: Record<string, unknown>): Promise<string>;
-    /** Install a new skill */
+    /** Install a skill from registry, npm, URL, or local path */
     skill_install(args: Record<string, unknown>): Promise<string>;
     /** Load skill's main context */
     skill_load_main(args: Record<string, unknown>): Promise<string>;

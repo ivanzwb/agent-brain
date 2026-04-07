@@ -1,9 +1,24 @@
 import { ToolDefinition } from "../innate-tools/types";
 
 export const SKILL_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
+  skill_find: {
+    name: 'skill_find',
+    description: 'Search for available skills from the online skill registry. Use this to discover skills by keyword before installing. Returns a list of matching skills with name, description, and install source.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search keyword or phrase to find relevant skills (e.g. "security audit", "data analysis", "web scraping")',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
   skill_list: {
     name: 'skill_list',
-    description: 'List all installed skills. Returns a list of available skills with their names and descriptions.',
+    description: 'List all locally installed skills. Returns a list of available skills with their names and descriptions.',
     parameters: {
       type: 'object',
       properties: {},
@@ -12,13 +27,13 @@ export const SKILL_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   },
   skill_install: {
     name: 'skill_install',
-    description: 'Install a new skill from a source (URL, npm package, or local path). The skill becomes available for use after installation.',
+    description: 'Install a skill from the online registry or a direct source. Accepts a skill name returned by skill_find, an npm package name, a URL, or a local file path. The skill becomes available for use after installation. Use skill_find first to discover available skills.',
     parameters: {
       type: 'object',
       properties: {
         source: {
           type: 'string',
-          description: 'Source of the skill to install: URL, npm package name, or local file path',
+          description: 'Skill name from skill_find results, npm package name, URL, or local file path',
         },
       },
       required: ['source'],

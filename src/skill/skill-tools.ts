@@ -2,6 +2,14 @@ import type { InnateTool, ToolDefinition } from '../innate-tools/types';
 import type { SkillHub } from './skill-hub';
 import { SKILL_TOOL_DEFINITIONS } from './skill-tool-definitions';
 
+export class SkillFindTool implements InnateTool {
+  readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_find;
+  constructor(private hub: SkillHub) {}
+  async execute(args: Record<string, unknown>): Promise<string> {
+    return this.hub.skill_find(args);
+  }
+}
+
 export class SkillListTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_list;
   constructor(private hub: SkillHub) {}

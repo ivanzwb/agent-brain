@@ -66,7 +66,7 @@ async function handleUserInput(question: string): Promise<string> {
 
 function runAgent(userInput: string): void {
   state = 'processing';
-  
+
   currentBrain = new AgentBrain({
     model,
     memory,
@@ -75,8 +75,8 @@ function runAgent(userInput: string): void {
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
       modelContextSize: 128_000,
-      maxSteps: 15,
-      maxReplans: 2,
+      maxSteps: 50,
+      maxReplans: 5,
     },
     eventPublisher: {
       publish(type: string, payload: unknown) {
@@ -117,10 +117,10 @@ function runAgent(userInput: string): void {
 async function askTask() {
   if (!isRunning) return;
   if (state !== 'idle') return;
-  
+
   state = 'waiting-task';
   const input = await promptInput('请输入您的请求: ');
-  
+
   if (!input.trim()) {
     state = 'idle';
     askTask();
@@ -132,7 +132,7 @@ async function askTask() {
     rl.close();
     process.exit(0);
   }
-  
+
   console.log(`\n🚀 开始处理: "${input}"\n`);
   runAgent(input);
 }

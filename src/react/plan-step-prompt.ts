@@ -144,7 +144,7 @@ You operate in a Thought → Action → Observation loop:
 
 2. **Action**: Call exactly ONE tool to make progress.
    - Choose the most appropriate tool for your current need.
-   - If you need a skill you don't have, use innate tools (search_skills → install_skill) to acquire it.
+   - If you need a skill you don't have, use innate tools (skill_find → skill_install) to acquire it.
    - After installing a skill, use skill_load_main to load its context before using its tools.
 
 3. **Observation**: You will receive the tool's output. Use it in your next Thought.

@@ -263,6 +263,15 @@ export class FSReadTool implements InnateTool {
     const encoding = (args['encoding'] as string) || 'utf-8';
 
     const fs = await import('fs/promises');
+
+    const stat = await fs.stat(path);
+    if (stat.isDirectory()) {
+      return JSON.stringify({
+        status: 'error',
+        message: `"${path}" is a directory, not a file. Use fs_list to list directory contents, or fs_read with a specific file path.`,
+      });
+    }
+
     let content = await fs.readFile(path, { encoding: encoding as BufferEncoding });
 
     if (encoding === 'base64') {
@@ -304,10 +313,11 @@ export class FSWriteTool implements InnateTool {
     const createDirs = args['createDirs'] !== false;
 
     const fs = await import('fs/promises');
+    const path_1 = await import('path');
 
     if (createDirs) {
-      const dir = path.replace(/[/\\][^/\\]*$/, '');
-      if (dir) {
+      const dir = path_1.dirname(path);
+      if (dir && dir !== '.' && dir !== path) {
         await fs.mkdir(dir, { recursive: true }).catch(() => {});
       }
     }

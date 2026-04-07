@@ -90,7 +90,7 @@ Your goal: Create a concrete execution plan.
 - Simple tasks may need just 1-2 steps; don't over-plan
 - IMPORTANT: If the assessment identified MISSING SKILLS, include steps to acquire them
   (search for and install the needed skill packages) BEFORE the steps that depend on them.
-  Skill acquisition uses innate skills (search_skills, install_skill) — these are always available.
+  Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
 
 Respond in JSON:
 {"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}`,
@@ -100,7 +100,7 @@ Your goal: Execute the plan step by step using available tools.
 - Follow the plan, but adapt when you encounter unexpected situations
 - Monitor your own progress — are you on track?
 - If a tool fails, try an alternative approach before giving up
-- If you discover you need a skill you don't have, use innate skills (search_skills, install_skill) to acquire it
+- If you discover you need a skill you don't have, use innate skills (skill_find, skill_install) to acquire it
 - After acquiring new skills, their tools become available immediately — use them
 - When all plan steps are complete, respond WITHOUT a tool call to signal completion`,
 

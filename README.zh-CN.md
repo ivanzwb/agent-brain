@@ -1,5 +1,11 @@
 # @biosbot/agent-brain
 
+[![CI](https://github.com/ivanzwb/agent-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/ivanzwb/agent-brain/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@biosbot/agent-brain.svg)](https://www.npmjs.com/package/@biosbot/agent-brain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green.svg)](https://nodejs.org/)
+
 用于构建自主 LLM 智能体的 Agentic AI 框架，具有类人认知架构。包含五阶段认知循环（PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT）、嵌套 ReAct 循环、动态技能获取、四种思维模式、Token 预算管理和记忆增强执行。
 
 [English](./README.md) | 中文

@@ -25,6 +25,7 @@ import { InnateToolHub } from './innate-tools/innate-tool-hub';
 import { MemoryHub } from './memory/memory-hub';
 import { AskUserTool } from './innate-tools/ask-user-tool';
 import {
+  SkillFindTool,
   SkillListTool,
   SkillInstallTool,
   SkillLoadMainTool,
@@ -137,6 +138,7 @@ export class AgentBrain {
     }
 
     this.skillHub = opts.skills;
+    this.innateToolHub.register(new SkillFindTool(this.skillHub));
     this.innateToolHub.register(new SkillListTool(this.skillHub));
     this.innateToolHub.register(new SkillInstallTool(this.skillHub));
     this.innateToolHub.register(new SkillLoadMainTool(this.skillHub));

@@ -1,5 +1,11 @@
 # @biosbot/agent-brain
 
+[![CI](https://github.com/ivanzwb/agent-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/ivanzwb/agent-brain/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@biosbot/agent-brain.svg)](https://www.npmjs.com/package/@biosbot/agent-brain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green.svg)](https://nodejs.org/)
+
 Agentic AI framework for building autonomous LLM agents with a human-like cognitive architecture. Features a five-phase cognitive cycle (PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT), nested ReAct loops, dynamic skill acquisition, four thinking modes, token budget management, and memory-augmented execution.
 
 English | [中文](./README.zh-CN.md)

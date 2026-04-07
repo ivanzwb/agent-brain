@@ -1,19 +1,30 @@
 import type { SkillFramework, ToolDeclaration } from '@biosbot/agent-skills';
+import { SkillFramework as SkillFrameworkClass } from '@biosbot/agent-skills';
 import type { ToolDefinition } from '../../src/innate-tools/types';
 import type { SkillHub } from '../../src/skill/skill-hub';
 
 const FRAMEWORK_TOOL_DECLARATIONS: ToolDefinition[] = [
   {
+    name: 'skill_find',
+    description: 'Search for available skills from the online skill registry by keyword.',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'Search keyword or phrase to find relevant skills' } },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'skill_list',
-    description: 'List all installed skills. Returns a list of available skills with their names and descriptions.',
+    description: 'List all locally installed skills. Returns a list of available skills with their names and descriptions.',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
     name: 'skill_install',
-    description: 'Install a new skill from a source (URL, npm package, or local path).',
+    description: 'Install a skill from the online registry or a direct source. Accepts a skill name from skill_find, npm package, URL, or local path.',
     parameters: {
       type: 'object',
-      properties: { source: { type: 'string', description: 'Source of the skill to install' } },
+      properties: { source: { type: 'string', description: 'Skill name from skill_find results, npm package name, URL, or local file path' } },
       required: ['source'],
       additionalProperties: false,
     },
@@ -66,6 +77,12 @@ export class SkillHubAdapter implements SkillHub {
 
   hasTool(toolName: string): boolean {
     return this.toolMap.has(toolName);
+  }
+
+  async skill_find(args: Record<string, unknown>): Promise<string> {
+    const query = args['query'] as string;
+    const results = await SkillFrameworkClass.searchSkills(query);
+    return JSON.stringify(results);
   }
 
   async skill_list(_args: Record<string, unknown>): Promise<string> {
