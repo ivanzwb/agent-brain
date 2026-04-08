@@ -69,26 +69,23 @@ Respond in JSON:
 Note: "fastPlan" is required when complexity is "simple", omit when "complex".`,
 
   [CognitivePhase.ASSESS]: `You are in the ASSESS phase (Evaluate Capabilities & Resources).
-Your goal: Think from the TASK's perspective first, then check what you have.
+Your goal: Identify what the task needs, what you already have (tools & skills), and where the real gaps and risks are.
 
-Step 1 — What does the task NEED? (task-driven, regardless of what you have)
-- What domain knowledge is required? (e.g., security audit, data analysis, content summarization)
-- What operational skills are required? (e.g., database querying, report generation, conversation analysis)
-- What external resources are needed? (e.g., historical data, templates)
+Step 1 — What does the task NEED?
+- List the key skill categories required (e.g., "summarization", "financial analysis", "web scraping", "scheduled automation").
 
 Step 2 — What do you HAVE?
-- Skill packages: each provides domain knowledge + scenarios + tools — most tools only make sense combined with the right skill
-- Innate tools: system defaults you can use directly without any domain knowledge
+- Use the Resource Overview below: innate tools (e.g., cron_*, http_get, http_post, web_search, web_scrape) and installed skills.
+- Map these resources to the required skill categories.
 
-Step 3 — Gap analysis
-- Group required skills into broader CATEGORIES
-- List skill categories needed (e.g., "summarization", "financial analysis")
-- Which skill categories can be matched by available skills?
-- Which skill categories are missing?
-- What are the risks and overall complexity?
+Step 3 — Gaps & risks
+- Which skill categories are covered (matchedSkillCategories)?
+- Which skill categories remain uncovered (missingSkillCategories)? Only mark as missing when neither skills nor innate tools can reasonably support them.
+- Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill and record clear risks.
+- Summarize overall complexity and the main risks.
 
 Respond in JSON:
-{"capabilityMatch":"...", "skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":"simple|moderate|complex","feasible":true}`,
+{"capabilityMatch":"...","skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":"simple|moderate|complex"}`,
 
   [CognitivePhase.PLAN]: `You are in the PLAN phase (Decompose & Plan).
 Your goal: Create a concrete execution plan.
@@ -101,6 +98,9 @@ Your goal: Create a concrete execution plan.
   - Install the best matching skill BEFORE using innate tools
   - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK
 - Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
+ - When you plan to use skill_find, also plan the follow-up installation step:
+   - skill_find returns a JSON array of skills (objects with fields such as slug, name, description, source, repo).
+   - Decide which skill best matches the task, then call skill_install with {"source":"<the chosen skill slug or name>"}.
 
 Respond in JSON:
 {"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}`,
