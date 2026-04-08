@@ -55,23 +55,19 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
     return JSON.stringify({ status: 'deleted', id });
   }
 
-  async knowledge_list(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('knowledge_list', args));
+  async knowledge_list(source?: string): Promise<string> {
+    return JSON.stringify(this.mem.listKnowledge(source));
   }
 
-  async knowledge_add(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('knowledge_add', args));
+  async knowledge_add(source: string, title: string, content: string, metadata?: Record<string, unknown>): Promise<string> {
+    return JSON.stringify(await this.mem.addKnowledge(source, title, content, metadata));
   }
 
-  async knowledge_delete(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('knowledge_delete', args));
+  async knowledge_delete(id: string): Promise<string> {
+    return JSON.stringify(await this.mem.removeKnowledge(id));
   }
 
-  async knowledge_search(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('knowledge_search', args));
-  }
-
-  async knowledge_read(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('knowledge_read', args));
+  async knowledge_search(query: string, topK = 5): Promise<string> {
+    return JSON.stringify(await this.mem.searchKnowledge(query, topK));
   }
 }

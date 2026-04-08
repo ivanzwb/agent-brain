@@ -46,7 +46,6 @@ import {
   KnowledgeAddTool,
   KnowledgeDeleteTool,
   KnowledgeSearchTool,
-  KnowledgeReadTool,
 } from './knowledge/knowledge-tools';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
 import {
@@ -151,7 +150,6 @@ export class AgentBrain {
       this.innateToolHub.register(new KnowledgeAddTool(this.knowledge));
       this.innateToolHub.register(new KnowledgeDeleteTool(this.knowledge));
       this.innateToolHub.register(new KnowledgeSearchTool(this.knowledge));
-      this.innateToolHub.register(new KnowledgeReadTool(this.knowledge));
     }
 
     this.skillHub = opts.skills;
