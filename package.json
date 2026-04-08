@@ -13,6 +13,7 @@
     "clean": "rimraf dist",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "demo": "npx ts-node demo/src/index.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

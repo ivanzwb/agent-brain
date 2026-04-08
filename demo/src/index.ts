@@ -72,6 +72,12 @@ function runAgent(userInput: string): void {
     model,
     memory,
     skills,
+    sandbox: {
+      rules: [
+        {action: 'web_fetch', permission: 'ALLOW'},
+        {action: 'web_search', permission: 'ALLOW'},
+      ]
+    },
     cron,
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
