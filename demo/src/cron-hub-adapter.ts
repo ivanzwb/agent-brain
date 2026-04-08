@@ -28,9 +28,8 @@ export class CronHubAdapter implements CronHub {
     return this.toolMap.has(name);
   }
 
-  async cron_list(args: Record<string, unknown>): Promise<string> {
-    const status = args['status'] as string | undefined;
-    const limit = (args['limit'] as number) || 20;
+  async cron_list(status?: string, limit?: number): Promise<string> {
+    const _limit = limit || 20;
 
     let result = Array.from(this.jobs.values());
     if (status) result = result.filter(j => j.status === status);
@@ -38,7 +37,7 @@ export class CronHubAdapter implements CronHub {
     return JSON.stringify({
       status: 'ok',
       count: result.length,
-      jobs: result.slice(0, limit).map(j => ({
+      jobs: result.slice(0, _limit).map(j => ({
         id: j.id,
         name: j.name,
         cronExpression: j.cronExpression,
@@ -51,11 +50,7 @@ export class CronHubAdapter implements CronHub {
     });
   }
 
-  async cron_add(args: Record<string, unknown>): Promise<string> {
-    const name = args['name'] as string;
-    const cronExpression = args['cronExpression'] as string;
-    const command = args['command'] as string;
-
+  async cron_add(name: string, cronExpression: string, command: string): Promise<string> {
     const id = 'job_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
 
     const job: JobEntry = {
@@ -91,8 +86,7 @@ export class CronHubAdapter implements CronHub {
     });
   }
 
-  async cron_delete(args: Record<string, unknown>): Promise<string> {
-    const id = args['id'] as string;
+  async cron_delete(id: string): Promise<string> {
     const job = this.jobs.get(id);
 
     if (!job) {
@@ -105,8 +99,7 @@ export class CronHubAdapter implements CronHub {
     return JSON.stringify({ status: 'ok', id });
   }
 
-  async cron_pause(args: Record<string, unknown>): Promise<string> {
-    const id = args['id'] as string;
+  async cron_pause(id: string): Promise<string> {
     const job = this.jobs.get(id);
 
     if (!job) {
@@ -122,8 +115,7 @@ export class CronHubAdapter implements CronHub {
     return JSON.stringify({ status: 'ok', id });
   }
 
-  async cron_resume(args: Record<string, unknown>): Promise<string> {
-    const id = args['id'] as string;
+  async cron_resume(id: string): Promise<string> {
     const job = this.jobs.get(id);
 
     if (!job) {
@@ -146,8 +138,7 @@ export class CronHubAdapter implements CronHub {
     return JSON.stringify({ status: 'ok', id });
   }
 
-  async cron_run_now(args: Record<string, unknown>): Promise<string> {
-    const id = args['id'] as string;
+  async cron_run_now(id: string): Promise<string> {
     const job = this.jobs.get(id);
 
     if (!job) {
