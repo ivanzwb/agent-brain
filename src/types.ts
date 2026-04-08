@@ -149,8 +149,6 @@ export interface Assessment {
   risks: string[];
   /** Assessed task complexity */
   complexity: 'simple' | 'moderate' | 'complex';
-  /** Whether the task is feasible to complete */
-  feasible: boolean;
 }
 
 /** PLAN phase output: execution plan */

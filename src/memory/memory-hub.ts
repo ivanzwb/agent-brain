@@ -21,10 +21,9 @@ export interface MemoryHub extends IHub {
 
     /**
      * Search short-term memory (current conversation history)
-     * @param args Search parameters
-     * @param args.query Search text (required)
-     * @param args.limit Return count (default 10)
-     * @returns List of matching conversation messages
+     * @param query Search text (required)
+     * @param limit Return count (default 10)
+     * @returns List of matching conversation messages as JSON string
      *
      * @example Return format:
      * ```json
@@ -36,93 +35,11 @@ export interface MemoryHub extends IHub {
      * }
      * ```
      */
-    conversation_search(args: Record<string, unknown>): Promise<string>;
-
-    /**
-     * Compress conversation history, retaining key information
-     * @param args Compression parameters
-     * @param args.keepLast Keep last N messages (default 10)
-     * @param args.extractKeyPoints Whether to extract key points (default true)
-     * @returns Compression result
-     *
-     * @example Return format:
-     * ```json
-     * { "status": "compressed", "keptCount": 10, "summary": "Discussed API authentication flow, user learned OAuth2" }
-     * ```
-     */
-    conversation_compress(args: Record<string, unknown>): Promise<string>;
-
-    // ==================== Long-term Memory ====================
-
-    /**
-     * Semantic search long-term memory
-     * @param args Search parameters
-     * @param args.query Search text (required)
-     * @param args.topK Return count (default 5, max 50)
-     * @param args.category Optional, filter by category
-     * @returns List of search results
-     *
-     * @example Return format:
-     * ```json
-     * {
-     *   "results": [
-     *     { "id": "mem_001", "category": "preference", "key": "user_name", "value": "John", "score": 0.95 }
-     *   ]
-     * }
-     * ```
-     */
-    memory_search(args: Record<string, unknown>): Promise<string>;
-
-    /**
-     * Save facts, preferences, or experiences to long-term memory
-     * @param args Save parameters
-     * @param args.key Memory identifier (required)
-     * @param args.value Memory content (required)
-     * @param args.category Category: preference | fact | episodic | procedural
-     * @returns Save result
-     *
-     * @example Return format:
-     * ```json
-     * { "id": "mem_001", "status": "saved", "key": "user_name" }
-     * ```
-     */
-    memory_save(args: Record<string, unknown>): Promise<string>;
-
-    /**
-     * List currently active memory entries
-     * @param args List parameters
-     * @param args.category Optional, filter by category
-     * @param args.limit Return count (default 20, max 100)
-     * @returns List of memory entries
-     *
-     * @example Return format:
-     * ```json
-     * {
-     *   "items": [
-     *     { "id": "mem_001", "category": "preference", "key": "user_name", "value": "John", "createdAt": "2024-01-01T00:00:00Z" }
-     *   ]
-     * }
-     * ```
-     */
-    memory_list(args: Record<string, unknown>): Promise<string>;
-
-    /**
-     * Soft delete memory entry (mark as deleted, can be recovered)
-     * @param args Delete parameters
-     * @param args.id Memory ID to delete (required)
-     * @returns Delete result
-     *
-     * @example Return format:
-     * ```json
-     * { "status": "deleted", "id": "mem_001" }
-     * ```
-     */
-    memory_delete(args: Record<string, unknown>): Promise<string>;
+    conversation_search(query: string, limit?: number): Promise<string>;
 
     /**
      * Get recent conversation history
-     * @param args Parameters
-     * @param args.limit Number of messages to return (default 20, max 200)
+     * @param limit Number of messages to return (default 20, max 200)
      * @returns List of conversation history
      *
      * @example Return format:
@@ -135,6 +52,65 @@ export interface MemoryHub extends IHub {
      * }
      * ```
      */
-    memory_get_history(args: Record<string, unknown>): Promise<string>;
+    conversation_history(limit?: number): Promise<string>;
 
+    // ==================== Long-term Memory ====================
+
+    /**
+     * Semantic search long-term memory
+     * @param query Search text (required)
+     * @param topK Return count (default 5, max 50)
+     * @returns List of search results as JSON string
+     *
+     * @example Return format:
+     * ```json
+     * {
+     *   "results": [
+     *     { "id": "mem_001", "key": "user_name", "value": "John", "score": 0.95 }
+     *   ]
+     * }
+     * ```
+     */
+    memory_search(query: string, topK?: number): Promise<string>;
+
+    /**
+     * Save facts, preferences, or experiences to long-term memory
+     * @param key Memory identifier (required)
+     * @param value Memory content (required)
+     * @returns Save result as JSON string
+     *
+     * @example Return format:
+     * ```json
+     * { "id": "mem_001", "status": "saved", "key": "user_name" }
+     * ```
+     */
+    memory_save(key: string, value: string): Promise<string>;
+
+    /**
+     * Get recent active memory entries
+     * @param limit Return count (default 20, max 100)
+     * @returns List of memory entries as JSON string
+     *
+     * @example Return format:
+     * ```json
+     * {
+     *   "items": [
+     *     { "id": "mem_001", "key": "user_name", "value": "John", "createdAt": "2024-01-01T00:00:00Z" }
+     *   ]
+     * }
+     * ```
+     */
+    memory_history(limit?: number): Promise<string>;
+
+    /**
+     * Soft delete memory entry (mark as deleted, can be recovered)
+     * @param id Memory ID to delete (required)
+     * @returns Delete result
+     *
+     * @example Return format:
+     * ```json
+     * { "status": "deleted", "id": "mem_001" }
+     * ```
+     */
+    memory_delete(id: string): Promise<string>;
 }

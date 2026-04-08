@@ -22,36 +22,37 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
     await this.mem.appendMessage(conversationId, role as 'user' | 'assistant', content);
   }
 
-  async conversation_search(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('conversation_search', args));
+  async conversation_search(query: string, limit?: number): Promise<string> {
+    const topK = limit ?? 10;
+    const results = await this.mem.searchConversation(query, topK);
+    return JSON.stringify({ results });
   }
 
-  async conversation_compress(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('conversation_compress', args));
+  async conversation_history(limit?: number): Promise<string> {
+    const messages = await this.mem.getConversationHistory(limit);
+    return JSON.stringify({ messages });
   }
 
-  async memory_search(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_search', args));
+  async memory_search(query: string, topK?: number): Promise<string> {
+    const results = await this.mem.searchMemory(query, topK);
+    return JSON.stringify({ results });
   }
 
-  async memory_save(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_save', args));
+  async memory_save(key: string, value: string): Promise<string> {
+    // 默认使用 'fact' 类别，置信度 1.0
+    const id = await this.mem.saveMemory('fact', key, value, 1.0);
+    return JSON.stringify({ id, status: 'saved', key });
   }
 
-  async memory_list(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_list', args));
+  async memory_history(limit?: number): Promise<string> {
+    const items = await this.mem.listMemories();
+    const sliced = typeof limit === 'number' ? items.slice(0, limit) : items;
+    return JSON.stringify({ items: sliced });
   }
 
-  async memory_delete(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_delete', args));
-  }
-
-  async memory_get_history(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_get_history', args));
-  }
-
-  async memory_remember(args: Record<string, unknown>): Promise<string> {
-    return JSON.stringify(await this.mem.executeTool('memory_remember', args));
+  async memory_delete(id: string): Promise<string> {
+    await this.mem.deleteMemory(id);
+    return JSON.stringify({ status: 'deleted', id });
   }
 
   async knowledge_list(args: Record<string, unknown>): Promise<string> {

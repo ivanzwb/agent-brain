@@ -35,12 +35,11 @@ import {
 import {
   MemorySearchTool,
   MemorySaveTool,
-  MemoryListTool,
+  MemoryHistoryTool,
   MemoryDeleteTool,
-  MemoryGetHistoryTool,
   ConversationTrackTool,
   ConversationSearchTool,
-  ConversationCompressTool
+  ConversationHistoryTool,
 } from './memory/memory-tools';
 import {
   KnowledgeListTool,
@@ -140,12 +139,11 @@ export class AgentBrain {
     this.memory = opts.memory;
     this.innateToolHub.register(new ConversationTrackTool(this.memory));
     this.innateToolHub.register(new ConversationSearchTool(this.memory));
-    this.innateToolHub.register(new ConversationCompressTool(this.memory));
+    this.innateToolHub.register(new ConversationHistoryTool(this.memory));
     this.innateToolHub.register(new MemorySearchTool(this.memory));
     this.innateToolHub.register(new MemorySaveTool(this.memory));
-    this.innateToolHub.register(new MemoryListTool(this.memory));
+    this.innateToolHub.register(new MemoryHistoryTool(this.memory));
     this.innateToolHub.register(new MemoryDeleteTool(this.memory));
-    this.innateToolHub.register(new MemoryGetHistoryTool(this.memory));
 
     this.knowledge = opts.knowledge;
     if(this.knowledge) {
@@ -242,7 +240,7 @@ export class AgentBrain {
 
     try {
       // ---- Memory retrieval: recall relevant experience before understanding task ----
-      const memoryResult = await this.memory.memory_search({ query: userInput, topK: 3 });
+      const memoryResult = await this.memory.memory_search(userInput, 3);
       const memoryData = JSON.parse(memoryResult);
       const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
 
@@ -524,7 +522,7 @@ export class AgentBrain {
   }
 
   private emptyAssessment(): Assessment {
-    return { skillCategories: [], capabilityMatch: '', matchedSkillCategories: [], missingSkillCategories: [], risks: [], complexity: 'simple', feasible: true };
+    return { skillCategories: [], capabilityMatch: '', matchedSkillCategories: [], missingSkillCategories: [], risks: [], complexity: 'simple' };
   }
 
   private emptyPlan(): Plan {

@@ -6,7 +6,9 @@ export class MemorySearchTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_search;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.memory_search(args);
+    const query = args['query'] as string;
+    const topK = args['topK'] as number | undefined;
+    return this.hub.memory_search(query, topK);
   }
 }
 
@@ -14,15 +16,18 @@ export class MemorySaveTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_save;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.memory_save(args);
+    const key = args['key'] as string;
+    const value = args['value'] as string;
+    return this.hub.memory_save(key, value);
   }
 }
 
-export class MemoryListTool implements InnateTool {
-  readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_list;
+export class MemoryHistoryTool implements InnateTool {
+  readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_history;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.memory_list(args);
+    const limit = args['limit'] as number | undefined;
+    return this.hub.memory_history(limit);
   }
 }
 
@@ -30,15 +35,8 @@ export class MemoryDeleteTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_delete;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.memory_delete(args);
-  }
-}
-
-export class MemoryGetHistoryTool implements InnateTool {
-  readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_get_history;
-  constructor(private hub: MemoryHub) {}
-  async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.memory_get_history(args);
+    const id = args['id'] as string;
+    return this.hub.memory_delete(id);
   }
 }
 
@@ -58,14 +56,17 @@ export class ConversationSearchTool implements InnateTool {
   readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_search;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.conversation_search(args);
+    const query = args['query'] as string;
+    const limit = args['limit'] as number | undefined;
+    return this.hub.conversation_search(query, limit);
   }
 }
 
-export class ConversationCompressTool implements InnateTool {
-  readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_compress;
+export class ConversationHistoryTool implements InnateTool {
+  readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_history;
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.conversation_compress(args);
+    const limit = args['limit'] as number | undefined;
+    return this.hub.conversation_history(limit);
   }
 }

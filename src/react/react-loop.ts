@@ -135,7 +135,7 @@ export class ReactLoop {
     if (memory) {
       try {
         const memoryQuery = `${ctx.plan.strategy} ${planStep.description}`;
-        const result = await memory.memory_search({ query: memoryQuery, topK: 3 });
+        const result = await memory.memory_search(memoryQuery, 3);
         const data = JSON.parse(result);
         memoryText = data.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
       } catch {

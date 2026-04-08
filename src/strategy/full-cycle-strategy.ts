@@ -21,17 +21,6 @@ export class FullCycleStrategy implements ExecutionStrategy {
     const assessment = await ops.assess(userInput, perception, tracker);
     ops.emit('phase:assess', { taskId, assessment });
 
-    if (!assessment.feasible) {
-      const answer = `I assessed this task and determined it's not feasible. Missing skills: ${assessment.missingSkillCategories.join(', ')}`;
-      return ops.buildResult(taskId, startTime, tracker, {
-        status: TaskStatus.FAILED,
-        terminationReason: TerminationReason.COMPLETED,
-        finalAnswer: answer,
-        steps: [],
-        cognition: { perception, assessment, plan: ops.emptyPlan() },
-      });
-    }
-
     // Phase 3-5: PLAN → EXECUTE → REFLECT (can loop)
     let plan: Plan | undefined;
     let executeResult: ExecuteResult | undefined;

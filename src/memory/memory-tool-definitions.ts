@@ -15,14 +15,14 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
           type: 'string',
           description: 'Conversation ID to group messages from the same conversation for later compression',
         },
-        role: { 
-          type: 'string', 
+        role: {
+          type: 'string',
           description: 'Message role in the conversation: user (human), assistant (AI), or system (system message)',
           enum: ['user', 'assistant', 'system'],
         },
-        content: { 
-          type: 'string', 
-          description: 'The actual message content/text that was exchanged in the conversation' 
+        content: {
+          type: 'string',
+          description: 'The actual message content/text that was exchanged in the conversation'
         },
       },
       required: ['conversationId', 'role', 'content'],
@@ -36,12 +36,12 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     parameters: {
       type: 'object',
       properties: {
-        query: { 
-          type: 'string', 
-          description: 'The search query - keywords or phrases to look for in the conversation history' 
+        query: {
+          type: 'string',
+          description: 'The search query - keywords or phrases to look for in the conversation history'
         },
-        limit: { 
-          type: 'integer', 
+        limit: {
+          type: 'integer',
           description: 'Maximum number of matching messages to return (default: 10, max: 50)',
           default: 10,
           minimum: 1,
@@ -53,23 +53,18 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     },
   },
 
-  conversation_compress: {
-    name: 'conversation_compress',
-    description: 'Compress the conversation history into long-term memory while preserving key information. This reduces token usage by summarizing the conversation and storing important points. The compressed summary becomes available for future sessions.',
+  conversation_history: {
+    name: 'conversation_history',
+    description: 'Retrieve the recent conversation history from short-term memory. Use this to recall what was discussed earlier in the current session for context continuity.',
     parameters: {
       type: 'object',
       properties: {
-        keepLast: { 
-          type: 'integer', 
-          description: 'Number of most recent messages to keep verbatim in short-term memory (default: 10, max: 100). These remain accessible for the current session.',
-          default: 10,
+        limit: {
+          type: 'integer',
+          description: 'Maximum number of recent messages to retrieve (default: 20, max: 200)',
+          default: 20,
           minimum: 1,
-          maximum: 100,
-        },
-        extractKeyPoints: { 
-          type: 'boolean', 
-          description: 'Whether to extract and summarize key points from the conversation (default: true). If true, generates a concise summary and stores it in long-term memory.',
-          default: true,
+          maximum: 200,
         },
       },
       additionalProperties: false,
@@ -88,21 +83,16 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     parameters: {
       type: 'object',
       properties: {
-        query: { 
-          type: 'string', 
-          description: 'Natural language query describing what you are looking for (e.g., "user preferences for UI", "meeting about project X")' 
+        query: {
+          type: 'string',
+          description: 'Natural language query describing what you are looking for (e.g., "user preferences for UI", "meeting about project X")'
         },
-        topK: { 
-          type: 'integer', 
+        topK: {
+          type: 'integer',
           description: 'Maximum number of results to return (default: 5, max: 50)',
           default: 5,
           minimum: 1,
           maximum: 50,
-        },
-        category: { 
-          type: 'string', 
-          description: 'Optional filter: restrict search to a specific memory category',
-          enum: ['preference', 'fact', 'episodic', 'procedural'],
         },
       },
       required: ['query'],
@@ -116,38 +106,28 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     parameters: {
       type: 'object',
       properties: {
-        key: { 
-          type: 'string', 
-          description: 'A short, unique identifier for this memory (e.g., "user_theme", "api_key_location", "meeting_schedule"). Used for quick lookup later.' 
+        key: {
+          type: 'string',
+          description: 'A short, unique identifier for this memory (e.g., "user_theme", "api_key_location", "meeting_schedule"). Used for quick lookup later.'
         },
-        value: { 
-          type: 'string', 
-          description: 'The actual content/fact to remember. Can be plain text or structured information.' 
-        },
-        category: { 
-          type: 'string', 
-          description: 'Classification of the memory for better organization and retrieval',
-          enum: ['preference', 'fact', 'episodic', 'procedural'],
+        value: {
+          type: 'string',
+          description: 'The actual content/fact to remember. Can be plain text or structured information.'
         },
       },
-      required: ['key', 'value', 'category'],
+      required: ['key', 'value'],
       additionalProperties: false,
     },
   },
 
-  memory_list: {
-    name: 'memory_list',
-    description: 'List all memories currently stored in long-term memory. Use this to see what information has been saved. Can filter by category to show specific types of memories.',
+  memory_history: {
+    name: 'memory_history',
+    description: 'List all memories currently stored in long-term memory. Use this to see what information has been saved.',
     parameters: {
       type: 'object',
       properties: {
-        category: { 
-          type: 'string', 
-          description: 'Optional filter: only show memories of this category',
-          enum: ['preference', 'fact', 'episodic', 'procedural'],
-        },
-        limit: { 
-          type: 'integer', 
+        limit: {
+          type: 'integer',
           description: 'Maximum number of memories to return (default: 20, max: 100)',
           default: 20,
           minimum: 1,
@@ -164,30 +144,12 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     parameters: {
       type: 'object',
       properties: {
-        id: { 
-          type: 'string', 
-          description: 'The unique memory ID to delete (obtained from memory_list or memory_search results)' 
+        id: {
+          type: 'string',
+          description: 'The unique memory ID to delete (obtained from memory_list or memory_search results)'
         },
       },
       required: ['id'],
-      additionalProperties: false,
-    },
-  },
-
-  memory_get_history: {
-    name: 'memory_get_history',
-    description: 'Retrieve the recent conversation history from short-term memory. Use this to recall what was discussed earlier in the current session for context continuity.',
-    parameters: {
-      type: 'object',
-      properties: {
-        limit: { 
-          type: 'integer', 
-          description: 'Maximum number of recent messages to retrieve (default: 20, max: 200)',
-          default: 20,
-          minimum: 1,
-          maximum: 200,
-        },
-      },
       additionalProperties: false,
     },
   },

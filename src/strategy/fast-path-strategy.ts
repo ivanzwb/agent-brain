@@ -11,7 +11,6 @@ export class FastPathStrategy implements ExecutionStrategy {
     const plan = perception.fastPlan!;
     const assessment = ops.emptyAssessment();
     assessment.complexity = 'simple';
-    assessment.feasible = true;
 
     ops.emit('phase:plan', { taskId, plan, replanCount: 0, fastPath: true });
 
