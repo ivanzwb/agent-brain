@@ -75,7 +75,6 @@ function runAgent(userInput: string): void {
     cron,
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
-      modelContextSize: 128_000,
       maxSteps: 50,
       maxReplans: 5,
     },

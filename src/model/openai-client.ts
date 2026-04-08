@@ -28,12 +28,15 @@ export interface OpenAIClientOptions {
   temperature?: number;
   /** Request timeout in milliseconds, default 60000 */
   timeoutMs?: number;
+  /** Model context window size in tokens (defaults to 128k if omitted) */
+  contextWindow?: number;
 }
 
 export class OpenAIClient implements IModelClient {
   private readonly client: OpenAI;
   private readonly model: string;
   private readonly temperature: number;
+  private readonly contextWindowSize: number;
 
   constructor(opts: OpenAIClientOptions) {
     this.client = new OpenAI({
@@ -43,6 +46,8 @@ export class OpenAIClient implements IModelClient {
     });
     this.model = opts.model;
     this.temperature = opts.temperature ?? 0.7;
+    // Default to 128k tokens if not specified explicitly
+    this.contextWindowSize = opts.contextWindow ?? 128_000;
   }
 
   // ----- ITokenCounter -----
@@ -54,6 +59,12 @@ export class OpenAIClient implements IModelClient {
 
   countTools(tools: ToolDefinition[]): number {
     return this.count(JSON.stringify(tools));
+  }
+
+  // ----- IModelClient -----
+
+  get contextWindow(): number {
+    return this.contextWindowSize;
   }
 
   async chat(messages: Message[], tools?: ToolDefinition[]): Promise<ModelResponse> {

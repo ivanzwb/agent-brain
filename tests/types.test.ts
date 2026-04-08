@@ -53,7 +53,6 @@ describe('types', () => {
     it('should use defaults when not provided', () => {
       const config = resolveConfig({
         systemPrompt: 'test',
-        modelContextSize: 4096,
       });
 
       expect(config.maxSteps).toBe(15);
@@ -65,7 +64,6 @@ describe('types', () => {
     it('should override defaults with provided values', () => {
       const config = resolveConfig({
         systemPrompt: 'test',
-        modelContextSize: 4096,
         maxSteps: 20,
         heartbeatTimeoutMs: 120_000,
         maxConsecutiveFailures: 5,
@@ -81,11 +79,9 @@ describe('types', () => {
     it('should return Required<AgentConfig>', () => {
       const config = resolveConfig({
         systemPrompt: 'test',
-        modelContextSize: 4096,
       });
 
       expect(config.systemPrompt).toBe('test');
-      expect(config.modelContextSize).toBe(4096);
     });
   });
 });

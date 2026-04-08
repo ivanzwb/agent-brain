@@ -1,5 +1,5 @@
 import type {
-  ITokenCounter,
+  IModelClient,
   Message,
   ToolDefinition,
 } from '../types';
@@ -10,32 +10,31 @@ import type {
 
 export class PromptBudget {
   constructor(
-    private readonly counter: ITokenCounter,
-    private readonly contextSize: number,
+    private readonly model: IModelClient,
   ) {}
 
   /** Calculate remaining tokens available for trimmable content after fixed content */
   remaining(fixedMessages: Message[], tools?: ToolDefinition[]): number {
     let used = 0;
     for (const msg of fixedMessages) {
-      used += this.counter.count(msg.content);
+      used += this.model.count(msg.content);
     }
     if (tools && tools.length > 0) {
-      used += this.counter.countTools(tools);
+      used += this.model.countTools(tools);
     }
-    return Math.max(0, this.contextSize - used);
+    return Math.max(0, this.model.contextWindow - used);
   }
 
   /** Trim text to not exceed maxTokens */
   trimText(text: string, maxTokens: number): string {
     if (maxTokens <= 0) return '';
-    const tokens = this.counter.count(text);
+    const tokens = this.model.count(text);
     if (tokens <= maxTokens) return text;
 
     // Estimate truncation position by ratio, progressively tighten
     let ratio = maxTokens / tokens;
     let trimmed = text.slice(0, Math.floor(text.length * ratio));
-    while (this.counter.count(trimmed) > maxTokens && trimmed.length > 0) {
+    while (this.model.count(trimmed) > maxTokens && trimmed.length > 0) {
       ratio *= 0.9;
       trimmed = text.slice(0, Math.floor(text.length * ratio));
     }
@@ -54,7 +53,7 @@ export class PromptBudget {
   ): Message[] {
     let total = 0;
     for (const msg of messages) {
-      total += this.counter.count(msg.content);
+      total += this.model.count(msg.content);
     }
     if (total <= maxTokens) return messages;
 

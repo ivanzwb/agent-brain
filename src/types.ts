@@ -247,8 +247,6 @@ export interface TaskResult {
 
 export interface AgentConfig {
   systemPrompt: string;
-  /** Model context window size in tokens */
-  modelContextSize: number;
   maxSteps?: number;
   heartbeatTimeoutMs?: number;
   maxConsecutiveFailures?: number;
@@ -297,6 +295,9 @@ export interface TokenUsage {
 
 /** LLM client supporting tool/function calling and token counting */
 export interface IModelClient extends ITokenCounter {
+  /** Maximum context window size (in tokens) supported by this model */
+  readonly contextWindow: number;
+
   chat(
     messages: Message[],
     tools?: ToolDefinition[],

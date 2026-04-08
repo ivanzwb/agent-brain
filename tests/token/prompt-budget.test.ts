@@ -1,24 +1,33 @@
 import { PromptBudget } from '../../src/token/prompt-budget';
-import { Message } from '../../src/types';
-import type { ITokenCounter } from '../../src/types';
+import type { Message, IModelClient, ToolDefinition } from '../../src/types';
 
-class MockTokenCounter implements ITokenCounter {
+class MockModelClient implements IModelClient {
+  readonly contextWindow: number;
+
+  constructor(contextWindow: number) {
+    this.contextWindow = contextWindow;
+  }
+
   count(text: string): number {
     return Math.ceil(text.length / 4);
   }
 
-  countTools(tools: any[]): number {
+  countTools(tools: ToolDefinition[]): number {
     return this.count(JSON.stringify(tools));
+  }
+
+  async chat(): Promise<never> {
+    throw new Error('MockModelClient.chat should not be called in PromptBudget tests');
   }
 }
 
 describe('PromptBudget', () => {
-  let counter: MockTokenCounter;
+  let model: MockModelClient;
   let budget: PromptBudget;
 
   beforeEach(() => {
-    counter = new MockTokenCounter();
-    budget = new PromptBudget(counter, 1000);
+    model = new MockModelClient(1000);
+    budget = new PromptBudget(model);
   });
 
   describe('remaining', () => {

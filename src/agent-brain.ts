@@ -205,10 +205,7 @@ export class AgentBrain {
     if (this.eventPublisher) {
       this.innateToolHub.setEventPublisher(this.eventPublisher);
     }
-    this.budget = new PromptBudget(
-      this.model,
-      this.config.modelContextSize,
-    );
+    this.budget = new PromptBudget(this.model);
   }
 
   /**
