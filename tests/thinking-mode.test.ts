@@ -52,7 +52,7 @@ describe('ThinkingModeScheduler', () => {
       const weights2 = scheduler.getWeights(CognitivePhase.PERCEIVE);
 
       weights1[ThinkingMode.CREATIVE] = 0.99;
-      
+
       expect(weights2[ThinkingMode.CREATIVE]).not.toBe(0.99);
     });
   });
@@ -70,7 +70,7 @@ describe('ThinkingModeScheduler', () => {
       const prompt = scheduler.getPhasePrompt(CognitivePhase.ASSESS);
 
       expect(prompt).toContain('ASSESS');
-      expect(prompt).toContain('requiredSkills');
+      expect(prompt).toContain('skillCategories');
     });
 
     it('should return prompt for PLAN phase', () => {

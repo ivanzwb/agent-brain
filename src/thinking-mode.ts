@@ -99,7 +99,7 @@ Your goal: Create a concrete execution plan.
 - IMPORTANT: For tasks requiring EXTERNAL DATA (stock prices, news, research, APIs), ALWAYS search for skills FIRST
   - Use skill_find to find specialized skills (e.g., "stock_data", "financial_analysis")
   - Install the best matching skill BEFORE using innate tools
-  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK 
+  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK
 - Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
 
 Respond in JSON:
@@ -111,7 +111,7 @@ Your goal: Execute the plan step by step using available tools.
 - Monitor your own progress — are you on track?
 - CRITICAL: For tasks needing external data (stock prices, news, APIs), ALWAYS check available skills FIRST
   - Use skill tools from acquired skill packages when available
-  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK 
+  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK
 - If you discover you need a skill you don't have, use innate skills (skill_find, skill_install) to acquire it
 - After acquiring new skills, their tools become available immediately — use them
 - When all plan steps are complete, respond WITHOUT a tool call to signal completion`,
