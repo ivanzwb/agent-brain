@@ -6,15 +6,16 @@ export class SkillFindTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_find;
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_find(args);
+    const query = args['query'] as string;
+    return this.hub.skill_find(query);
   }
 }
 
 export class SkillListTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_list;
   constructor(private hub: SkillHub) {}
-  async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_list(args);
+  async execute(_args: Record<string, unknown>): Promise<string> {
+    return this.hub.skill_list();
   }
 }
 
@@ -22,7 +23,8 @@ export class SkillInstallTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_install;
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_install(args);
+    const source = args['source'] as string;
+    return this.hub.skill_install(source);
   }
 }
 
@@ -30,7 +32,8 @@ export class SkillLoadMainTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_load_main;
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_load_main(args);
+    const name = args['name'] as string;
+    return this.hub.skill_load_main(name);
   }
 }
 
@@ -38,7 +41,9 @@ export class SkillLoadReferenceTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_load_reference;
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_load_reference(args);
+    const name = args['name'] as string;
+    const referencePath = args['referencePath'] as string;
+    return this.hub.skill_load_reference(name, referencePath);
   }
 }
 
@@ -46,6 +51,7 @@ export class SkillListToolsTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_list_tools;
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    return this.hub.skill_list_tools(args);
+    const name = args['name'] as string;
+    return this.hub.skill_list_tools(name);
   }
 }

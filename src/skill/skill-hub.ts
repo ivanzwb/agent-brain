@@ -11,17 +11,17 @@ import type { ToolDefinition } from '../innate-tools/types';
 
 export interface SkillHub extends IHub {
     /** Find skills from the online registry by keyword */
-    skill_find(args: Record<string, unknown>): Promise<string>;
+    skill_find(keyword: string): Promise<string>;
     /** List all locally installed skills */
-    skill_list(args: Record<string, unknown>): Promise<string>;
+    skill_list(): Promise<string>;
     /** Install a skill from registry, npm, URL, or local path */
-    skill_install(args: Record<string, unknown>): Promise<string>;
+    skill_install(name: string): Promise<string>;
     /** Load skill's main context */
-    skill_load_main(args: Record<string, unknown>): Promise<string>;
+    skill_load_main(name: string): Promise<string>;
     /** Load skill's reference files */
-    skill_load_reference(args: Record<string, unknown>): Promise<string>;
+    skill_load_reference(name: string, referencePath: string): Promise<string>;
     /** List tools provided by a skill */
-    skill_list_tools(args: Record<string, unknown>): Promise<string>;
+    skill_list_tools(name: string): Promise<string>;
     /** Get description text list of all installed skills */
     getSkillsDescription(): string[];
     /** Get tool definitions provided by all installed skills */
@@ -41,4 +41,34 @@ export interface SkillDeclaration {
   name: string;
   /** Skill description */
   description: string;
+}
+
+export interface SkillFindArgs {
+  query: string;
+  [key: string]: unknown;
+}
+
+export interface SkillListArgs {
+  [key: string]: unknown;
+}
+
+export interface SkillInstallArgs {
+  source: string;
+  [key: string]: unknown;
+}
+
+export interface SkillLoadMainArgs {
+  name: string;
+  [key: string]: unknown;
+}
+
+export interface SkillLoadReferenceArgs {
+  name: string;
+  referencePath: string;
+  [key: string]: unknown;
+}
+
+export interface SkillListToolsArgs {
+  name: string;
+  [key: string]: unknown;
 }

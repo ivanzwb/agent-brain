@@ -79,19 +79,16 @@ export class SkillHubAdapter implements SkillHub {
     return this.toolMap.has(toolName);
   }
 
-  async skill_find(args: Record<string, unknown>): Promise<string> {
-    const query = args['query'] as string;
+  async skill_find(query: string): Promise<string> {
     const results = await SkillFrameworkClass.searchSkills(query);
     return JSON.stringify(results);
   }
 
-  async skill_list(_args: Record<string, unknown>): Promise<string> {
+  async skill_list(): Promise<string> {
     return JSON.stringify(this.sf.listSkills());
   }
 
-  async skill_install(args: Record<string, unknown>): Promise<string> {
-    const source = args['source'] as string;
-    // Local directory → install(); otherwise network install (ClawHub slug / GitHub owner/repo)
+  async skill_install(source: string): Promise<string> {
     const fs = await import('fs');
     const entry = fs.existsSync(source) && fs.statSync(source).isDirectory()
       ? await this.sf.install(source)
@@ -99,19 +96,15 @@ export class SkillHubAdapter implements SkillHub {
     return JSON.stringify({ name: entry.name, status: entry.status });
   }
 
-  async skill_load_main(args: Record<string, unknown>): Promise<string> {
-    const name = args['name'] as string;
+  async skill_load_main(name: string): Promise<string> {
     return JSON.stringify(this.sf.loadMain(name));
   }
 
-  async skill_load_reference(args: Record<string, unknown>): Promise<string> {
-    const name = args['name'] as string;
-    const referencePath = args['referencePath'] as string;
+  async skill_load_reference(name: string, referencePath: string): Promise<string> {
     return JSON.stringify(this.sf.loadReference(name, referencePath));
   }
 
-  async skill_list_tools(args: Record<string, unknown>): Promise<string> {
-    const name = args['name'] as string;
+  async skill_list_tools(name: string): Promise<string> {
     return JSON.stringify({ skillName: name, tools: this.sf.listTools(name) });
   }
 
