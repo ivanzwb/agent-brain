@@ -414,7 +414,6 @@ export class AgentBrain {
   ): Promise<ExecuteResult> {
     const controller = new LoopController(
       this.config.maxSteps,
-      this.config.heartbeatTimeoutMs,
       this.config.maxConsecutiveFailures,
     );
 

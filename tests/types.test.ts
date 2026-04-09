@@ -56,7 +56,6 @@ describe('types', () => {
       });
 
       expect(config.maxSteps).toBe(15);
-      expect(config.heartbeatTimeoutMs).toBe(60_000);
       expect(config.maxConsecutiveFailures).toBe(3);
       expect(config.maxReplans).toBe(2);
     });
@@ -65,13 +64,11 @@ describe('types', () => {
       const config = resolveConfig({
         systemPrompt: 'test',
         maxSteps: 20,
-        heartbeatTimeoutMs: 120_000,
         maxConsecutiveFailures: 5,
         maxReplans: 3,
       });
 
       expect(config.maxSteps).toBe(20);
-      expect(config.heartbeatTimeoutMs).toBe(120_000);
       expect(config.maxConsecutiveFailures).toBe(5);
       expect(config.maxReplans).toBe(3);
     });

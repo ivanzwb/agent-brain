@@ -8,14 +8,12 @@ export class LoopController {
   private _stepCount = 0;
   private _consecutiveFailures = 0;
   private _state: TaskStatus = TaskStatus.PENDING;
-  private _lastHeartbeat: number = Date.now();
   private _terminationReason?: TerminationReason;
   private _pausePromise?: Promise<void>;
   private _pauseResolve?: () => void;
 
   constructor(
     private maxSteps: number,
-    private heartbeatTimeoutMs: number,
     private maxConsecutiveFailures: number,
   ) {}
 
@@ -27,13 +25,8 @@ export class LoopController {
     return this._state;
   }
 
-  get lastHeartbeat(): number {
-    return this._lastHeartbeat;
-  }
-
   start(): void {
     this._state = TaskStatus.RUNNING;
-    this._lastHeartbeat = Date.now();
   }
 
   pause(): void {
@@ -78,10 +71,6 @@ export class LoopController {
     this._consecutiveFailures = 0;
   }
 
-  updateHeartbeat(): void {
-    this._lastHeartbeat = Date.now();
-  }
-
   checkTermination(): TerminationCheck {
     if (this._state === TaskStatus.TERMINATED) {
       return {
@@ -104,15 +93,6 @@ export class LoopController {
       return {
         shouldTerminate: true,
         reason: TerminationReason.UNRECOVERABLE_ERROR,
-      };
-    }
-
-    const elapsed = Date.now() - this._lastHeartbeat;
-    if (elapsed > this.heartbeatTimeoutMs) {
-      this._terminationReason = TerminationReason.HEARTBEAT_TIMEOUT;
-      return {
-        shouldTerminate: true,
-        reason: TerminationReason.HEARTBEAT_TIMEOUT,
       };
     }
 

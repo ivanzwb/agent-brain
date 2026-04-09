@@ -145,12 +145,26 @@ export class ReactLoop {
     // Build initial messages
     const systemPrompt = this.buildSystemPrompt(ctx, planOverview, planStep, memoryText);
 
-    const userPrompt = this.buildUserPrompt(ctx.plan, planStep, priorContext, ctx.userContext);
+    const assistantPrompt = this.buildAssistantPrompt(ctx.plan, planStep);
 
     const messages: Message[] = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
+      { role: 'assistant', content: assistantPrompt },
     ];
+
+    // Attach prior step outputs and explicit user-provided context as assistant messages
+    if (priorContext) {
+      messages.push({
+        role: 'assistant',
+        content: `[Prior Step Outputs]\n${priorContext}`,
+      });
+    }
+    if (ctx.userContext) {
+      messages.push({
+        role: 'user',
+        content: `[User Provided Context]\n${ctx.userContext}`,
+      });
+    }
 
     // Inject all context provided by user via ask_user
     const userProvidedContext = this.innateToolHub.getUserProvidedContext();
@@ -179,7 +193,6 @@ export class ReactLoop {
       }
 
       controller.incrementStep();
-      controller.updateHeartbeat();
 
       const allTools = [...innateTools, ...skillTools];
 
@@ -243,8 +256,6 @@ export class ReactLoop {
       if (this.innateToolHub.hasTool(call.name)) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
-          const userResponse = 'Observation -> ' + observation;
-          await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const skillName: string = call.arguments['skillName'] as string;
             skillTools = this.skillHub.getTools(skillName);
@@ -391,18 +402,12 @@ export class ReactLoop {
   /**
    * Build user prompt: strategy + current step goal + prior outputs + action instructions.
    */
-  private buildUserPrompt(plan: Plan, planStep: PlanStep, priorContext: string, userContext?: string): string {
+  private buildAssistantPrompt(plan: Plan, planStep: PlanStep): string {
     const lines: string[] = [
       `Strategy: ${plan.strategy}`,
       '',
       `Your task: Execute step ${planStep.id} — ${planStep.description}`,
     ];
-    if (priorContext) {
-      lines.push('', '[Prior Step Outputs]', priorContext);
-    }
-    if (userContext) {
-      lines.push('', '[User Provided Context (from ask_user tool)]', userContext);
-    }
     lines.push(
       '',
       `Overall expected outcome: ${plan.expectedOutcome}`,
@@ -474,7 +479,12 @@ You operate in a Thought → Action → Observation loop:
    - Consider whether you have enough information to complete the step.
 
 2. **Action**: Call exactly ONE tool to make progress.
-   - Choose the most appropriate tool for your current need.
+  - Choose the most appropriate tool for your current need.
+  - When the user asks about your past work, previous conversations, or requests a daily/weekly report of what **you** did (for example: "写个你昨天工作的日报"), FIRST try to recall from memory tools instead of asking the user:
+    - Prefer **conversation_history** with an explicit limit (e.g. {"limit":100}) to fetch recent dialogue when summarising a time range like "昨天".
+    - Use **conversation_search**({"query": "...", "limit": N}) only when the user asks about a specific past topic or project, not for generic daily reports.
+    - Use **memory_search** / **memory_history** when you need long-term facts or previously stored summaries.
+  - Only when memory clearly does not contain the required information should you fall back to ask_user.
 
 3. **Observation**: You will receive the tool's output. Use it in your next Thought.
 

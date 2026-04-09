@@ -87,49 +87,6 @@ export function buildPlanStepSystemPrompt(params: {
   return parts.join('\n');
 }
 
-/**
- * Build user message for PlanStep ReAct loop (first user message).
- *
- * Structure:
- *   1. Overall strategy (one sentence)
- *   2. Current step goal
- *   3. Prior step outputs (if dependencies exist)
- *   4. Action instructions
- */
-export function buildPlanStepUserPrompt(params: {
-  /** Overall strategy */
-  strategy: string;
-  /** Current step */
-  currentStep: { id: string; description: string };
-  /** Prior step outputs (concatenated text, may be empty) */
-  priorContext: string;
-  /** Expected final output */
-  expectedOutcome: string;
-}): string {
-  const { strategy, currentStep, priorContext, expectedOutcome } = params;
-
-  const lines: string[] = [];
-
-  lines.push(`Strategy: ${strategy}`);
-  lines.push('');
-  lines.push(`Your task: Execute step ${currentStep.id} — ${currentStep.description}`);
-
-  if (priorContext) {
-    lines.push('');
-    lines.push('[Prior Step Outputs]');
-    lines.push('The following outputs from previous steps are available as context:');
-    lines.push(priorContext);
-  }
-
-  lines.push('');
-  lines.push(`Overall expected outcome: ${expectedOutcome}`);
-  lines.push('');
-  lines.push('Begin working on this step. Use the Thought→Action→Observation cycle.');
-  lines.push('When the step is complete, respond with your final output WITHOUT calling any tool.');
-
-  return lines.join('\n');
-}
-
 // ============================================================
 // ReAct Behavior Protocol — Guides model how to think and act in each round
 // ============================================================
@@ -143,12 +100,16 @@ You operate in a Thought → Action → Observation loop:
    - Consider whether you have enough information to complete the step.
 
 2. **Action**: Call exactly ONE tool to make progress.
-   - Choose the most appropriate tool for your current need.
+  - Choose the most appropriate tool for your current need.
   - If you need a skill you don't have, use innate tools (skill_find → skill_install) to acquire it.
   - When you call skill_find, it returns a JSON array of skills (objects with fields such as slug, name, description, source, repo).
   - From that JSON, pick the best-matching skill and then call skill_install with arguments like {"source":"<the chosen skill slug or name>"}.
   - Do not stop after printing the JSON; if a missing capability can be provided by a skill, complete the chain skill_find → skill_install → skill_load_main before using the new tools.
   - After installing a skill, use skill_load_main to load its context before using its tools.
+  - When planning for questions about your past work, previous conversations, or daily/weekly reports of what **you** did, include steps that read from memory tools instead of asking the user:
+   - Prefer conversation_history with a limit (for example: {"limit":100}) to fetch recent dialogue for time-based summaries like "昨天".
+   - Use conversation_search({"query":"...","limit":N}) only for topic- or project-specific lookups.
+   - Use memory_search / memory_history to recall long-term facts or previously stored summaries.
 
 3. **Observation**: You will receive the tool's output. Use it in your next Thought.
 

@@ -248,7 +248,6 @@ export interface TaskResult {
 export interface AgentConfig {
   systemPrompt: string;
   maxSteps?: number;
-  heartbeatTimeoutMs?: number;
   maxConsecutiveFailures?: number;
   /** Maximum number of replans triggered by REFLECT */
   maxReplans?: number;
@@ -256,7 +255,6 @@ export interface AgentConfig {
 
 const CONFIG_DEFAULTS = {
   maxSteps: 15,
-  heartbeatTimeoutMs: 60_000,
   maxConsecutiveFailures: 3,
   maxReplans: 2,
 } as const;
