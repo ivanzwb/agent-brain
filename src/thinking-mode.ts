@@ -3,6 +3,7 @@ import {
   ThinkingMode,
   type ThinkingModeWeights,
 } from './types';
+import { loadPrompt } from './prompts/load-prompt';
 
 // ============================================================
 // Thinking mode weight ratios for each cognitive phase
@@ -51,92 +52,11 @@ const WEIGHT_TABLE: Record<CognitivePhase, ThinkingModeWeights> = {
 // ============================================================
 
 const PHASE_PROMPTS: Record<CognitivePhase, string> = {
-  [CognitivePhase.PERCEIVE]: `You are in the PERCEIVE phase (Understand Task & Classify Complexity).
-Your goal: Deeply understand the task and classify its complexity before doing anything.
-- Identify the surface request vs. the true underlying intent
-- Spot ambiguities — what is unclear or assumed?
-- Define what success looks like
-- Consider: if this request came from a real person, what would they REALLY want?
-- Classify task complexity:
-  SIMPLE: single-action requests (search, list, read, run), direct Q&A with 1-2 tool calls, or clear mapping to one tool.
-  COMPLEX: multi-step tasks, tasks with dependencies, analysis/synthesis/creative work, or unclear approach.
-- For SIMPLE tasks: also provide a "fastPlan" with exactly 1 step so execution can start immediately.
-- When in doubt, choose "complex" — it is safer.
-
-Respond in JSON:
-{"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[],"complexity":"simple|complex","fastPlan":{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}}
-
-Note: "fastPlan" is required when complexity is "simple", omit when "complex".`,
-
-  [CognitivePhase.ASSESS]: `You are in the ASSESS phase (Evaluate Capabilities & Resources).
-Your goal: Identify what the task needs, what you already have (tools & skills), and where the real gaps and risks are.
-
-Step 1 — What does the task NEED?
-- List the key skill categories required (e.g., "summarization", "financial analysis", "web scraping", "scheduled automation", "outbound communication (email / notifications)").
-
-Step 2 — What do you HAVE?
-- Use the Resource Overview below: innate tools (e.g., cron_*, http_get, http_post, web_search, web_scrape) and installed skills.
-- Map these resources to the required skill categories.
-
-Step 3 — Gaps & risks
-- Which skill categories are covered (matchedSkillCategories)?
-- Which skill categories remain uncovered (missingSkillCategories)? Only mark as missing when neither skills nor innate tools can reasonably support them.
-- Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill (for example, sending emails, calling external APIs, or other integrations), record this and treat it as "can be filled by acquiring a skill" rather than "impossible".
-- Summarize overall complexity and the main risks.
-
-Respond in JSON:
-{"capabilityMatch":"...","skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":"simple|moderate|complex"}`,
-
-  [CognitivePhase.PLAN]: `You are in the PLAN phase (Decompose & Plan).
-Your goal: Create a concrete execution plan.
-- Break the task into clear, ordered steps
-- Each step should be actionable (can be done with available tools or reasoning)
-- Identify dependencies between steps
-- Simple tasks may need just 1-2 steps; don't over-plan
-- IMPORTANT: For tasks requiring EXTERNAL DATA (stock prices, news, research, APIs) or EXTERNAL ACTIONS (sending emails, chat messages, calendar operations, 3rd-party integrations), ALWAYS search for skills FIRST
-  - Use skill_find to find specialized skills (e.g., "stock_data", "financial_analysis", "email", "notification")
-  - Install the best matching skill BEFORE using innate tools
-  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK, and clearly state that you cannot perform the side-effect (such as actually sending the email) without an appropriate skill or tool.
-- Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
- - When you plan to use skill_find, also plan the follow-up installation step:
-   - skill_find returns a JSON array of skills (objects with fields such as slug, name, description, source, repo).
-   - Decide which skill best matches the task, then call skill_install with {"source":"<the chosen skill slug or name>"}.
-
-Respond in JSON:
-{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}`,
-
-  [CognitivePhase.EXECUTE]: `You are in the EXECUTE phase (Execute & Monitor).
-Your goal: Execute the plan step by step using available tools.
-- Follow the plan, but adapt when you encounter unexpected situations
-- Monitor your own progress — are you on track?
-- CRITICAL: For tasks needing external data (stock prices, news, APIs), ALWAYS check available skills FIRST
-  - Use skill tools from acquired skill packages when available
-  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK
-- If you discover you need a skill you don't have, use innate skills (skill_find, skill_install) to acquire it
-- After acquiring new skills, their tools become available immediately — use them
-- When all plan steps are complete, respond WITHOUT a tool call to signal completion`,
-
-  [CognitivePhase.REFLECT]: `You are in the REFLECT phase (Reflect & Optimize).
-Your goal: Evaluate the work that was done, learn from it, and decide next steps.
-
-Result evaluation:
-- Did the result meet the success criteria defined earlier?
-- What went well? What could be improved?
-
-Experience accumulation:
-- Extract lessons that would help with similar future tasks
-- What methods worked? What didn't? Any better approaches discovered?
-
-Confidence calibration:
-- Success → increase confidence for similar tasks in the future
-- Failure → analyze root cause objectively, focus on what can be improved, avoid over-negativity
-
-Replan decision:
-- If the result is clearly inadequate, should we revise the plan and retry?
-- Only suggest replan if there's a realistic chance of improvement with a different approach
-
-Respond in JSON:
-{"goalMet":true,"strengths":[],"improvements":[],"lessonsLearned":[],"needsReplan":false}`,
+  [CognitivePhase.PERCEIVE]: loadPrompt('cognitive/perceive.md'),
+  [CognitivePhase.ASSESS]: loadPrompt('cognitive/assess.md'),
+  [CognitivePhase.PLAN]: loadPrompt('cognitive/plan.md'),
+  [CognitivePhase.EXECUTE]: loadPrompt('cognitive/execute.md'),
+  [CognitivePhase.REFLECT]: loadPrompt('cognitive/reflect.md'),
 };
 
 // ============================================================

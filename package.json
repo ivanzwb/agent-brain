@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-prompts.js",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "jest",

@@ -22,6 +22,10 @@ import { MemoryHub } from '../memory/memory-hub';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
 import type { SecuritySandbox, ActionCategory } from '../sandbox/security-sandbox';
+import { loadPrompt, interpolate } from '../prompts/load-prompt';
+
+const REACT_PROTOCOL = loadPrompt('react-protocol.md');
+const EXECUTE_STEP_ASSISTANT = loadPrompt('react/execute-step-assistant.md');
 
 // ============================================================
 // ReactLoop — Inner loop (Thought→Action→Observation) within EXECUTE phase
@@ -403,19 +407,12 @@ export class ReactLoop {
    * Build user prompt: strategy + current step goal + prior outputs + action instructions.
    */
   private buildAssistantPrompt(plan: Plan, planStep: PlanStep): string {
-    const lines: string[] = [
-      `Strategy: ${plan.strategy}`,
-      '',
-      `Your task: Execute step ${planStep.id} — ${planStep.description}`,
-    ];
-    lines.push(
-      '',
-      `Overall expected outcome: ${plan.expectedOutcome}`,
-      '',
-      'Begin working on this step. Use the Thought→Action→Observation cycle.',
-      'When the step is complete, respond with your final output WITHOUT calling any tool.',
-    );
-    return lines.join('\n');
+    return interpolate(EXECUTE_STEP_ASSISTANT, {
+      strategy: plan.strategy,
+      stepId: planStep.id,
+      stepDescription: planStep.description,
+      expectedOutcome: plan.expectedOutcome,
+    });
   }
 
   /**
@@ -465,37 +462,3 @@ export class ReactLoop {
     return { status, finalAnswer, steps, planStepResults, terminationReason: reason };
   }
 }
-
-// ============================================================
-// ReAct Behavior Protocol — Guides model to follow Thought→Action→Observation loop
-// ============================================================
-
-const REACT_PROTOCOL = `[ReAct Protocol]
-You operate in a Thought → Action → Observation loop:
-
-1. **Thought**: Analyze the current situation. What do you know? What do you need? What's the best next action?
-   - If this is the first iteration, review the step goal and available context.
-   - If you have observations from previous actions, reason about what they tell you.
-   - Consider whether you have enough information to complete the step.
-
-2. **Action**: Call exactly ONE tool to make progress.
-  - Choose the most appropriate tool for your current need.
-  - When working with skills, if the skill you need is already listed in [Installed Skills] or you know it is pre-installed, DO NOT call skill_install again; go directly to skill_load_main / skill_list_tools / that skill's tools.
-  - If a previous call to skill_install failed with an error such as "already exists" or "Skill directory already exists", treat that as meaning the skill is already installed; do not retry installation, just proceed to load and use the skill.
-  - When a step requires capabilities like sending emails, chat messages, notifications, or other external actions and you do not have a direct innate tool for them, FIRST try to acquire or use an appropriate skill via skill_find / skill_install / skill_load_main before concluding that the action is impossible.
-  - When the user asks about your past work, previous conversations, or requests a daily/weekly report of what **you** did (for example: "写个你昨天工作的日报"), FIRST try to recall from memory tools instead of asking the user:
-    - Prefer **conversation_history** with an explicit limit (e.g. {"limit":100}) to fetch recent dialogue when summarising a time range like "昨天".
-    - Use **conversation_search**({"query": "...", "limit": N}) only when the user asks about a specific past topic or project, not for generic daily reports.
-    - Use **memory_search** / **memory_history** when you need long-term facts or previously stored summaries.
-  - Only when memory clearly does not contain the required information should you fall back to ask_user.
-
-3. **Observation**: You will receive the tool's output. Use it in your next Thought.
-
-**Completion**: When you have enough information to provide the step's output, respond with your final answer WITHOUT calling any tool.
-
-**Error handling**: If a tool fails, reason about alternatives in your next Thought.
-
-**Constraints**:
-- Execute ONLY the current step. Do not attempt subsequent steps.
-- Each response should contain either a Thought + tool call, or a final answer.
-- Stay focused on the step objective.`;
