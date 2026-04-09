@@ -1,5 +1,5 @@
 import { InnateToolHub } from '../../src/innate-tools/innate-tool-hub';
-import type { InnateTool, ToolDefinition } from '../../src/innate-tools/types';
+import type { InnateTool } from '../../src/innate-tools/types';
 import type { IEventPublisher } from '../../src/types';
 
 const createMockTool = (name: string, description: string = 'Test tool'): InnateTool => ({
@@ -52,7 +52,7 @@ describe('InnateToolHub', () => {
   describe('unregister', () => {
     it('should unregister existing tool', () => {
       hub.register(createMockTool('test_tool'));
-      
+
       const result = hub.unregister('test_tool');
 
       expect(result).toBe(true);
@@ -164,7 +164,7 @@ describe('InnateToolHub', () => {
       const promise = hub.requestUserInput('What is your name?');
 
       expect(hub.hasTool('ask_user')).toBe(false);
-      
+
       hub.provideUserInput('John');
       const result = await promise;
 
@@ -174,7 +174,7 @@ describe('InnateToolHub', () => {
     it('should provide user input multiple times', async () => {
       hub.requestUserInput('Question 1');
       hub.provideUserInput('Answer 1');
-      
+
       hub.requestUserInput('Question 2');
       hub.provideUserInput('Answer 2');
 

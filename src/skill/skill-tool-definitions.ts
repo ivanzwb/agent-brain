@@ -27,7 +27,7 @@ export const SKILL_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   },
   skill_install: {
     name: 'skill_install',
-    description: 'Install a skill from the online registry or a direct source. Accepts a skill name returned by skill_find, an npm package name, a URL, or a local file path. The skill becomes available for use after installation. Use skill_find first to discover available skills.',
+    description: 'Install a new skill from the online registry or a direct source. Accepts a skill name returned by skill_find, an npm package name, a URL, or a local file path. The skill becomes available for use after installation. Before calling this, check existing skills with skill_list; if the skill is already installed, do NOT call skill_install again.',
     parameters: {
       type: 'object',
       properties: {

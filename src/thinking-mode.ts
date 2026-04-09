@@ -72,7 +72,7 @@ Note: "fastPlan" is required when complexity is "simple", omit when "complex".`,
 Your goal: Identify what the task needs, what you already have (tools & skills), and where the real gaps and risks are.
 
 Step 1 — What does the task NEED?
-- List the key skill categories required (e.g., "summarization", "financial analysis", "web scraping", "scheduled automation").
+- List the key skill categories required (e.g., "summarization", "financial analysis", "web scraping", "scheduled automation", "outbound communication (email / notifications)").
 
 Step 2 — What do you HAVE?
 - Use the Resource Overview below: innate tools (e.g., cron_*, http_get, http_post, web_search, web_scrape) and installed skills.
@@ -81,7 +81,7 @@ Step 2 — What do you HAVE?
 Step 3 — Gaps & risks
 - Which skill categories are covered (matchedSkillCategories)?
 - Which skill categories remain uncovered (missingSkillCategories)? Only mark as missing when neither skills nor innate tools can reasonably support them.
-- Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill and record clear risks.
+- Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill (for example, sending emails, calling external APIs, or other integrations), record this and treat it as "can be filled by acquiring a skill" rather than "impossible".
 - Summarize overall complexity and the main risks.
 
 Respond in JSON:
@@ -93,10 +93,10 @@ Your goal: Create a concrete execution plan.
 - Each step should be actionable (can be done with available tools or reasoning)
 - Identify dependencies between steps
 - Simple tasks may need just 1-2 steps; don't over-plan
-- IMPORTANT: For tasks requiring EXTERNAL DATA (stock prices, news, research, APIs), ALWAYS search for skills FIRST
-  - Use skill_find to find specialized skills (e.g., "stock_data", "financial_analysis")
+- IMPORTANT: For tasks requiring EXTERNAL DATA (stock prices, news, research, APIs) or EXTERNAL ACTIONS (sending emails, chat messages, calendar operations, 3rd-party integrations), ALWAYS search for skills FIRST
+  - Use skill_find to find specialized skills (e.g., "stock_data", "financial_analysis", "email", "notification")
   - Install the best matching skill BEFORE using innate tools
-  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK
+  - When no suitable skill exists, use innate tools (http_get, web_search, web_scrape) as FALLBACK, and clearly state that you cannot perform the side-effect (such as actually sending the email) without an appropriate skill or tool.
 - Skill acquisition uses innate skills (skill_find, skill_install) — these are always available.
  - When you plan to use skill_find, also plan the follow-up installation step:
    - skill_find returns a JSON array of skills (objects with fields such as slug, name, description, source, repo).

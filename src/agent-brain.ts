@@ -373,9 +373,18 @@ export class AgentBrain {
     const phase = CognitivePhase.PLAN;
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
+    // Expose installed skills to the planner so it can prefer reusing them
+    const skillSummaries: string[] = this.skillHub.getSkillsDescription();
+    const installedSkillsText =
+      skillSummaries.length > 0
+        ? `\n\n[Installed Skills]\n${skillSummaries.map((s) => `  - ${s}`).join('\n')}`
+        : '';
 
     const messages: Message[] = [
-      { role: 'system', content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}` },
+      {
+        role: 'system',
+        content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}${installedSkillsText}`,
+      },
       { role: 'user', content: userInput },
     ];
 

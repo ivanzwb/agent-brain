@@ -5,7 +5,7 @@ describe('LoopController', () => {
   let controller: LoopController;
 
   beforeEach(() => {
-    controller = new LoopController(10, 60000, 3);
+    controller = new LoopController(10, 3);
   });
 
   describe('initial state', () => {
@@ -29,13 +29,6 @@ describe('LoopController', () => {
       expect(controller.state).toBe(TaskStatus.RUNNING);
     });
 
-    it('should set lastHeartbeat to current time', () => {
-      const before = Date.now();
-      controller.start();
-      const after = Date.now();
-      expect(controller.lastHeartbeat).toBeGreaterThanOrEqual(before);
-      expect(controller.lastHeartbeat).toBeLessThanOrEqual(after);
-    });
   });
 
   describe('pause/resume', () => {
@@ -66,15 +59,15 @@ describe('LoopController', () => {
     it('should wait when paused', async () => {
       controller.start();
       controller.pause();
-      
+
       let resumed = false;
       const waitPromise = controller.waitIfPaused().then(() => {
         resumed = true;
       });
-      
+
       // Not yet resumed
       expect(resumed).toBe(false);
-      
+
       controller.resume();
       await waitPromise;
       expect(resumed).toBe(true);
@@ -131,27 +124,9 @@ describe('LoopController', () => {
     });
   });
 
-  describe('heartbeat', () => {
-    it('should update heartbeat', () => {
-      const before = controller.lastHeartbeat;
-      controller.updateHeartbeat();
-      expect(controller.lastHeartbeat).toBeGreaterThanOrEqual(before);
-    });
-
-    it('should timeout when heartbeat expires', async () => {
-      const shortController = new LoopController(10, 1, 3);
-      shortController.start();
-      // Wait for timeout
-      await new Promise(resolve => setTimeout(resolve, 10));
-      const check = shortController.checkTermination();
-      expect(check.shouldTerminate).toBe(true);
-      expect(check.reason).toBe(TerminationReason.HEARTBEAT_TIMEOUT);
-    });
-  });
-
   describe('checkTermination', () => {
     it('should terminate when step count reaches max', () => {
-      const shortController = new LoopController(1, 60000, 3);
+      const shortController = new LoopController(1, 3);
       shortController.start();
       shortController.incrementStep();
       const check = shortController.checkTermination();
