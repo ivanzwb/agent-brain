@@ -3,7 +3,10 @@ import {
   ThinkingMode,
   type ThinkingModeWeights,
 } from './types';
-import { loadPrompt } from './prompts/load-prompt';
+import {
+  COGNITIVE_PHASE_PROMPT_KEYWORD,
+  getPromptByKeyword,
+} from './prompts/prompt-system';
 
 // ============================================================
 // Thinking mode weight ratios for each cognitive phase
@@ -51,13 +54,13 @@ const WEIGHT_TABLE: Record<CognitivePhase, ThinkingModeWeights> = {
 // System prompt guidance for each cognitive phase
 // ============================================================
 
-const PHASE_PROMPTS: Record<CognitivePhase, string> = {
-  [CognitivePhase.PERCEIVE]: loadPrompt('cognitive/perceive.md'),
-  [CognitivePhase.ASSESS]: loadPrompt('cognitive/assess.md'),
-  [CognitivePhase.PLAN]: loadPrompt('cognitive/plan.md'),
-  [CognitivePhase.EXECUTE]: loadPrompt('cognitive/execute.md'),
-  [CognitivePhase.REFLECT]: loadPrompt('cognitive/reflect.md'),
-};
+const PHASE_PROMPTS: Record<CognitivePhase, string> = (() => {
+  const m = {} as Record<CognitivePhase, string>;
+  for (const phase of Object.values(CognitivePhase)) {
+    m[phase] = getPromptByKeyword(COGNITIVE_PHASE_PROMPT_KEYWORD[phase]);
+  }
+  return m;
+})();
 
 // ============================================================
 // Thinking mode descriptions

@@ -28,6 +28,25 @@ export type {
   AskHandler,
 } from './sandbox/security-sandbox';
 
+// --- Prompt templates (keyword registry + compose) ---
+export {
+  COGNITIVE_PHASE_PROMPT_KEYWORD,
+  composePrompt,
+  getPromptByKeyword,
+  listPromptCategories,
+  listPromptTemplates,
+  reloadPromptRegistry,
+  renderPrompt,
+  resolvePromptPath,
+  aliasesForPrompt,
+} from './prompts/prompt-system';
+export type {
+  PromptBlock,
+  PromptTemplateEntry,
+  ComposePromptOptions,
+} from './prompts/prompt-system';
+export { interpolate, loadPrompt } from './prompts/load-prompt';
+
 // --- All types, enums & contracts ---
 export {
   // Enums

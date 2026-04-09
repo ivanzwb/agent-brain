@@ -22,10 +22,9 @@ import { MemoryHub } from '../memory/memory-hub';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
 import type { SecuritySandbox, ActionCategory } from '../sandbox/security-sandbox';
-import { loadPrompt, interpolate } from '../prompts/load-prompt';
+import { getPromptByKeyword, renderPrompt } from '../prompts/prompt-system';
 
-const REACT_PROTOCOL = loadPrompt('react-protocol.md');
-const EXECUTE_STEP_ASSISTANT = loadPrompt('react/execute-step-assistant.md');
+const REACT_PROTOCOL = getPromptByKeyword('react.protocol');
 
 // ============================================================
 // ReactLoop — Inner loop (Thought→Action→Observation) within EXECUTE phase
@@ -407,7 +406,7 @@ export class ReactLoop {
    * Build user prompt: strategy + current step goal + prior outputs + action instructions.
    */
   private buildAssistantPrompt(plan: Plan, planStep: PlanStep): string {
-    return interpolate(EXECUTE_STEP_ASSISTANT, {
+    return renderPrompt('react.execute-step-assistant', {
       strategy: plan.strategy,
       stepId: planStep.id,
       stepDescription: planStep.description,

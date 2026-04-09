@@ -22,3 +22,10 @@ function copyMarkdownFiles(fromDir, toDir) {
 }
 
 copyMarkdownFiles(srcPrompts, distPrompts);
+
+const registrySrc = path.join(srcPrompts, 'registry.json');
+const registryDest = path.join(distPrompts, 'registry.json');
+if (fs.existsSync(registrySrc)) {
+  fs.mkdirSync(distPrompts, { recursive: true });
+  fs.copyFileSync(registrySrc, registryDest);
+}

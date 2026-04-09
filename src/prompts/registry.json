@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "cognitive.perceive",
+      "path": "cognitive/perceive.md",
+      "category": "cognitive",
+      "keywords": ["cognitive.perceive", "PERCEIVE", "phase.perceive", "perceive"],
+      "description": "PERCEIVE phase: understand task and classify complexity"
+    },
+    {
+      "id": "cognitive.assess",
+      "path": "cognitive/assess.md",
+      "category": "cognitive",
+      "keywords": ["cognitive.assess", "ASSESS", "phase.assess", "assess"],
+      "description": "ASSESS phase: capabilities, resources, gaps"
+    },
+    {
+      "id": "cognitive.plan",
+      "path": "cognitive/plan.md",
+      "category": "cognitive",
+      "keywords": ["cognitive.plan", "PLAN", "phase.plan", "plan"],
+      "description": "PLAN phase: decompose and plan execution"
+    },
+    {
+      "id": "cognitive.execute",
+      "path": "cognitive/execute.md",
+      "category": "cognitive",
+      "keywords": ["cognitive.execute", "EXECUTE", "phase.execute", "execute"],
+      "description": "EXECUTE phase (outer): monitor and tool-use guidance"
+    },
+    {
+      "id": "cognitive.reflect",
+      "path": "cognitive/reflect.md",
+      "category": "cognitive",
+      "keywords": ["cognitive.reflect", "REFLECT", "phase.reflect", "reflect"],
+      "description": "REFLECT phase: evaluate and replan decision"
+    },
+    {
+      "id": "react.protocol",
+      "path": "react/protocol.md",
+      "category": "react",
+      "keywords": ["react.protocol", "ReAct", "react", "thought_action_observation"],
+      "description": "Inner ReAct loop: Thought → Action → Observation"
+    },
+    {
+      "id": "react.execute-step-assistant",
+      "path": "react/execute-step-assistant.md",
+      "category": "react",
+      "keywords": ["react.execute-step-assistant", "react.execute_step", "plan_step.assistant"],
+      "description": "Assistant message template for a single plan step (placeholders: strategy, stepId, stepDescription, expectedOutcome)"
+    }
+  ]
+}

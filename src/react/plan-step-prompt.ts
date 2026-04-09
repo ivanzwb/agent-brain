@@ -6,9 +6,9 @@
 // and the template guides the model to follow ReAct protocol, focusing on the current step.
 // ============================================================
 
-import { loadPrompt } from '../prompts/load-prompt';
+import { getPromptByKeyword } from '../prompts/prompt-system';
 
-const REACT_PROTOCOL = loadPrompt('react-protocol.md');
+const REACT_PROTOCOL = getPromptByKeyword('react.protocol');
 
 /**
  * Build system prompt for PlanStep ReAct loop.
