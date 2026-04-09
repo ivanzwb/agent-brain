@@ -225,8 +225,19 @@ export class AgentBrain {
   // Public Entry Point
   // ===========================================================
 
-  async run(userInput: string): Promise<TaskResult> {
-    const taskId = generateTaskId();
+  async run(
+    userInput: string,
+    options?: {
+      /** Stable id for memory / conversation grouping (e.g. per cron job). */
+      conversationId?: string;
+      /**
+       * After PERCEIVE, always use {@link FastPathStrategy} (PERCEIVE → EXECUTE only).
+       * If the model omitted `fastPlan`, a single-step plan from `userInput` is used.
+       */
+      fastPath?: boolean;
+    },
+  ): Promise<TaskResult> {
+    const taskId = options?.conversationId ?? generateTaskId();
     const startTime = Date.now();
     const tracker = new TokenTracker(this.model);
 
@@ -240,11 +251,24 @@ export class AgentBrain {
       const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
 
       // ---- Phase 1: PERCEIVE (includes complexity classification) ----
-      const perception = await this.perceive(userInput, memory, tracker);
+      let perception = await this.perceive(userInput, memory, tracker);
       this.emit('phase:perceive', { taskId, perception });
 
-      // ---- Select execution strategy based on perceived complexity ----
-      const strategy: ExecutionStrategy = perception.complexity === 'simple'
+      const useFastPath = options?.fastPath === true || perception.complexity === 'simple';
+      if (useFastPath) {
+        perception = {
+          ...perception,
+          complexity: 'simple',
+          fastPlan:
+            perception.fastPlan ?? {
+              strategy: 'Execute the task described in the user message.',
+              steps: [{ id: 's1', description: userInput, dependsOn: [] }],
+              expectedOutcome: 'Complete the requested work.',
+            },
+        };
+      }
+
+      const strategy: ExecutionStrategy = useFastPath
         ? new FastPathStrategy()
         : new FullCycleStrategy();
 

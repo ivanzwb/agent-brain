@@ -63,6 +63,13 @@
       "category": "fragments",
       "keywords": ["fragments.recall-business", "recall.business", "fragments.conversation-tool-runtime", "fragments.memory-tool-runtime", "conversation.tool.runtime", "memory.tool.runtime"],
       "description": "Conversation vs memory recall policy; {{include:fragments/recall-business.md}}"
+    },
+    {
+      "id": "fragments.cron-scheduling",
+      "path": "fragments/cron-scheduling.md",
+      "category": "fragments",
+      "keywords": ["fragments.cron-scheduling", "cron.scheduling"],
+      "description": "Pre-flight resources before cron_add; {{include:fragments/cron-scheduling.md}}"
     }
   ]
 }

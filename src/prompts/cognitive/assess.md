@@ -9,6 +9,7 @@ Step 2 — What do you HAVE?
 - Map these resources to the required skill categories.
 
 Step 3 — Gaps & risks
+{{include:fragments/cron-scheduling.md}}
 - Which skill categories are covered (matchedSkillCategories)?
 - Which skill categories remain uncovered (missingSkillCategories)? Only mark as missing when neither skills nor innate tools can reasonably support them.
 - Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill (for example, sending emails, calling external APIs, or other integrations), record this and treat it as "can be filled by acquiring a skill" rather than "impossible".

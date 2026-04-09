@@ -19,7 +19,8 @@ export class CronAddTool implements InnateTool {
     const name = args['name'] as string;
     const cronExpression = args['cronExpression'] as string;
     const command = args['command'] as string;
-    return this.hub.cron_add(name, cronExpression, command);
+    const resolvedResources = args['resolvedResources'] as Record<string, unknown> | undefined;
+    return this.hub.cron_add(name, cronExpression, command, resolvedResources);
   }
 }
 

@@ -17,6 +17,7 @@ export { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge/knowledge-tool-definitio
 export { MEMORY_TOOL_DEFINITIONS, CONVERSATION_TOOL_DEFINITIONS } from './memory/memory-tool-definitions';
 export { MemoryHub } from './memory/memory-hub';
 export { KnowledgeHub } from './knowledge/knowledge-hub';
+export type { CronHub } from './cron/cron-hub';
 export { SecuritySandbox } from './sandbox/security-sandbox';
 export type {
   PermissionLevel,

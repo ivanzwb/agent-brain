@@ -29,7 +29,7 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   cron_add: {
     name: 'cron_add',
     description:
-      'Creates a **recurring** job: **cronExpression** (scheduler syntax) + **command** (payload string executed by the runtime, often natural language for an agent). **Mutates** the schedule store.',
+      'Registers a **recurring** job: **cronExpression** (parsed in **UTC**) + **command** (executed by the host at fire time, e.g. full cognitive loop). **Mutates** the schedule store. Optional **resolvedResources**: JSON snapshot of inputs that must already be known—scheduled runs are not interactive.',
     parameters: {
       type: 'object',
       properties: {
@@ -39,11 +39,16 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
         },
         cronExpression: {
           type: 'string',
-          description: 'Standard cron expression for this runtime (e.g. "0 8 * * *")',
+          description: 'Cron expression (library supports 5–6 fields; evaluated in UTC)',
         },
         command: {
           type: 'string',
-          description: 'Command / instruction string stored with the job',
+          description: 'Self-contained task text for the scheduled run',
+        },
+        resolvedResources: {
+          type: 'object',
+          description:
+            'Optional. Key/value facts agreed with the user **before** scheduling (paths, URLs, recipients, API env, etc.) so the run does not need ask_user.',
         },
       },
       required: ['name', 'cronExpression', 'command'],

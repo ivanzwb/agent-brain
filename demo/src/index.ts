@@ -1,11 +1,12 @@
 import { createMemory, type EmbeddingProvider } from '@biosbot/agent-memory';
 import { OpenAI } from 'openai';
 import { SkillFramework } from '@biosbot/agent-skills';
-import { AgentBrain } from '../../src/agent-brain';
+import { AgentBrain, type CronHub } from '../../src';
+import { formatCronJobUserInput } from './format-cron-job-input';
 import { OpenAIClient } from '../../src/model/openai-client';
+import { CronHubAdapter } from './cron-hub-adapter';
 import { SkillHubAdapter } from './skill-hub-adapter';
 import { MemoryHubAdapter } from './memory-hub-adapter';
-import { CronHubAdapter } from './cron-hub-adapter';
 import * as readline from 'readline';
 
 process.env.OPENAI_API_KEY = '';
@@ -44,7 +45,7 @@ let currentBrain: AgentBrain | null = null;
 let model: OpenAIClient;
 let memory: MemoryHubAdapter;
 let skills: SkillHubAdapter;
-let cron: CronHubAdapter;
+let cron!: CronHubAdapter;
 
 function promptInput(promptText: string): Promise<string> {
   return new Promise((resolve) => {
@@ -65,20 +66,18 @@ async function handleUserInput(question: string): Promise<string> {
   return answer;
 }
 
-function runAgent(userInput: string): void {
-  state = 'processing';
-
-  currentBrain = new AgentBrain({
+function createAgentBrain(cronHub: CronHub): AgentBrain {
+  return new AgentBrain({
     model,
     memory,
     skills,
     sandbox: {
       rules: [
-        {action: 'web_fetch', permission: 'ALLOW'},
-        {action: 'web_search', permission: 'ALLOW'},
-      ]
+        { action: 'web_fetch', permission: 'ALLOW' },
+        { action: 'web_search', permission: 'ALLOW' },
+      ],
     },
-    cron,
+    cron: cronHub,
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
       maxSteps: 50,
@@ -99,8 +98,15 @@ function runAgent(userInput: string): void {
       },
     },
   });
+}
 
-  currentBrain.run(userInput)
+function runAgent(userInput: string): void {
+  state = 'processing';
+
+  currentBrain = createAgentBrain(cron);
+
+  currentBrain
+    .run(userInput)
     .then((result) => {
       console.log('\n' + '='.repeat(60));
       console.log(`📊 状态: ${result.status}`);
@@ -141,6 +147,7 @@ async function askTask() {
   if (input.trim().toLowerCase() === ':exit') {
     console.log('\n👋 再见!');
     isRunning = false;
+    cron.dispose();
     rl.close();
     process.exit(0);
   }
@@ -163,7 +170,6 @@ async function main() {
   memory = new MemoryHubAdapter(mem);
   const sf = SkillFramework.init(process.env.SKILLS_DIR ?? './skills');
   skills = new SkillHubAdapter(sf);
-  cron = new CronHubAdapter();
   model = new OpenAIClient({
     baseURL: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
@@ -171,8 +177,27 @@ async function main() {
     temperature: 0.1,
   });
 
+  cron = new CronHubAdapter({
+    onJobTrigger: async (job) => {
+      const payload = formatCronJobUserInput(job);
+      const conversationId = `cron_${job.id}_${Date.now().toString(36)}`;
+      console.log(`\n[cron] ▶ ${job.name} (${job.id}) → fast path`);
+      const brain = createAgentBrain(cron);
+      try {
+        const result = await brain.run(payload, { conversationId, fastPath: true });
+        console.log(`[cron] ✓ ${job.name} status=${result.status}`);
+        if (result.finalAnswer) {
+          console.log(`[cron] answer (truncated): ${result.finalAnswer.slice(0, 500)}${result.finalAnswer.length > 500 ? '…' : ''}`);
+        }
+      } catch (e) {
+        console.error(`[cron] ✗ ${job.name}:`, e);
+      }
+    },
+  });
+
   process.on('SIGINT', () => {
     isRunning = false;
+    cron.dispose();
     console.log('\n\n👋 再见!');
     rl.close();
     process.exit(0);

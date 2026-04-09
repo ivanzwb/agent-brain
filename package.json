@@ -79,6 +79,7 @@
   "devDependencies": {
     "@biosbot/agent-memory": "^0.1.3",
     "@biosbot/agent-skills": "^0.1.3",
+    "cron-parser": "^5.5.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.39",
     "jest": "^30.3.0",

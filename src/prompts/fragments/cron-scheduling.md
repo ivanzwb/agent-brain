@@ -1,0 +1,2 @@
+- **Scheduled jobs (`cron_*`)**: Treat **cron_add** as a contract. **Before** calling it, finish any **user clarification** (paths, credentials, recipients, timezone intent, what “success” means). Put frozen facts in **resolvedResources** and keep **command** self-contained—**scheduled runs should not rely on ask_user** mid-loop because there may be no user at fire time.
+- **Expression**: Cron strings are evaluated in **UTC** in the default in-memory scheduler; say so if the user expects local time.
