@@ -404,8 +404,15 @@ Discovered during execution: missing security-audit domain knowledge
 | Load main skill | `skill_load_main` | Load a skill's main module, making its tools available |
 | Load reference skill | `skill_load_reference` | Load a skill's reference/auxiliary module |
 | List skill tools | `skill_list_tools` | List all tools provided by a skill package |
-| Knowledge search | `knowledge_search` | Search for relevant information from the knowledge base |
-| Knowledge read | `knowledge_read` | Read specific content from the knowledge base |
+
+When `AgentBrain` is constructed with a **KnowledgeHub**, four additional innate tools are registered:
+
+| Innate Tool | Tool Name | Description |
+|-------------|-----------|-------------|
+| Knowledge list | `knowledge_list` | List KB entries (optional **source** filter) |
+| Knowledge add | `knowledge_add` | Create an entry (**source**, **title**, **content**; optional **metadata**) |
+| Knowledge delete | `knowledge_delete` | Delete an entry by **id** |
+| Knowledge search | `knowledge_search` | Semantic search over KB content (**query**; optional **topK**) |
 
 Human analogy: Humans are born knowing how to walk, grasp things, and speak (innate skills), but cooking, programming, and playing piano require learning (skill packages). Learning itself relies on innate skills—using eyes to read tutorials, using hands to practice.
 
@@ -597,38 +604,26 @@ Within each PlanStep's ReAct loop:
    - Tool call fails → Return error message
    - Special handling: After `skill_load_main` / `skill_load_reference` executes, refresh the tool list provided by that skill
 
-### 4.2 ReAct Behavior Protocol
+### 4.2 Inner ReAct loop (prompt template)
 
-ReactLoop injects a **ReAct Protocol** into the system prompt to guide the model to follow standardized loop behavior:
-
-```
-[ReAct Protocol]
-You operate in a Thought → Action → Observation loop:
-
-1. Thought: Analyze current state, reason about the next action
-2. Action: Call exactly one tool
-3. Observation: Receive tool output, use for next Thought round
-
-Completion condition: When the current step's goal is achieved, reply with the final answer directly without calling any more tools
-Error handling: When a tool fails, analyze alternative approaches in Thought
-Constraint: Only execute the current step; do not address subsequent steps
-```
+ReactLoop builds the PlanStep **system** prompt from the registered template `react/plan_step_system` (`src/prompts/react/plan-step-system.md`). That file expands `{{include:react/inter-react-loop.md}}`, which defines the Thought → Action → Observation rules (and pulls in skill / recall fragments). The opening line of the inner template is `[Inter ReAct loop]`.
 
 ### 4.3 Execution Context Injection
 
 Each PlanStep's ReAct loop receives rich context:
 
-**System Prompt Assembly** (concatenated in order):
+**System prompt** — rendered via `buildPlanStepSystemPrompt` → `renderPrompt('react.plan_step_system', …)` (placeholders + optional blocks):
 
 | Layer | Content | Source |
 |-------|---------|--------|
-| 1 | System prompt (role definition + behavioral norms) | AgentConfig.systemPrompt |
-| 2 | ReAct behavior protocol | REACT_PROTOCOL constant |
-| 3 | Thinking mode guidance | ThinkingModeScheduler |
-| 4 | Execution plan overview (all steps and dependencies) | Plan |
-| 5 | Current step description | PlanStep |
-| 6 | Installed skill catalog | SkillHub.getSkillsDescription() |
-| 7 | Memory context | MemoryHub.searchMemory() |
+| 1 | System prompt (role definition + behavioral norms) | Outer `ReactLoopContext.systemPrompt` (EXECUTE phase text from AgentBrain) |
+| 2 | Inner ReAct loop rules (+ included fragments) | `react/plan-step-system.md` → `react/inter-react-loop.md` |
+| 3 | Thinking mode guidance | `ReactLoopContext.thinkingGuidance` |
+| 4 | Execution plan overview (all steps and dependencies) | `Plan` (built in `ReactLoop.buildPlanOverviewText`) |
+| 5 | Current step description | `PlanStep` |
+| 6 | Installed skill catalog (optional) | `SkillHub.getSkillsDescription()` |
+| 7 | Skill gap hint (optional) | `Assessment.missingSkillCategories` |
+| 8 | Memory context (optional) | `MemoryHub.memory_search` for the step |
 
 **User Prompt Assembly**:
 
@@ -765,8 +760,15 @@ SkillHub                          InnateToolHub
   └─ ...
 
 MemoryHub
-  ├─ knowledge_search ─ HubTool ─►  register(knowledge_search)
-  └─ knowledge_read   ─ HubTool ─►  register(knowledge_read)
+  ├─ memory_search   ─ HubTool ─►  register(memory_search)
+  ├─ memory_save     ─ HubTool ─►  register(memory_save)
+  └─ … (conversation_*, memory_*)
+
+KnowledgeHub (optional)
+  ├─ knowledge_list   ─ HubTool ─►  register(knowledge_list)
+  ├─ knowledge_add    ─ HubTool ─►  register(knowledge_add)
+  ├─ knowledge_delete ─ HubTool ─►  register(knowledge_delete)
+  └─ knowledge_search ─ HubTool ─►  register(knowledge_search)
 ```
 
 This way, the model sees a unified innate tool list during the EXECUTE phase, without needing to know which Hub each tool originates from.

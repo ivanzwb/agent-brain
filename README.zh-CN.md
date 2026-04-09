@@ -23,6 +23,8 @@
 | **Token 预算管理** | 上下文窗口优化 |
 | **记忆集成** | 上下文感知的执行 |
 | **安全沙箱** | 基于规则的工具执行权限守卫（ALLOW / DENY / ASK） |
+| **可选 CronHub** | 实现 `CronHub` 并在 `AgentBrain` 上传入 `cron` 以启用 `cron_*` 工具（示例适配器在 `demo/`） |
+| **提示词注册表** | 认知阶段与 ReAct 模板位于 `src/prompts`（构建后位于 `dist/prompts`），可通过 `getPromptByKeyword` / `renderPrompt` / `composePrompt` 加载 |
 
 ## 概述
 
@@ -47,7 +49,7 @@ PERCEIVE 阶段同时分类任务复杂度，选择合适的**执行策略**：
 框架采用嵌套的双层 ReAct 架构：
 
 - **大 ReAct（外层）**：五阶段认知循环（大脑的宏观工作流）
-- **小 ReAct（内层）**：EXECUTE 阶段内按步骤的执行循环
+- **小 ReAct（内层）**：EXECUTE 阶段内按步骤的执行循环（system 侧由 `react/plan-step-system.md` 组装，并包含 `react/inter-react-loop.md`）
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -74,6 +76,7 @@ PERCEIVE 阶段同时分类任务复杂度，选择合适的**执行策略**：
 - **记忆集成**，实现上下文感知的执行
 - **安全沙箱**，基于规则的权限控制（ALLOW / DENY / ASK），守护所有工具和技能的执行
 - **可扩展事件系统**，支持可观测性
+- **`run` 可选参数**：`conversationId` 固定会话/记忆分组；`fastPath` 在 PERCEIVE 后强制走快速通道（跳过 ASSESS / PLAN / REFLECT）
 
 ## 安装
 
@@ -129,22 +132,21 @@ console.log(result.finalAnswer);
 
 ### 技能与工具
 
-- **天生工具**：系统内建能力（技能管理、知识 CRUD）
+- **天生工具**：系统内建能力（文件、命令、网络、记忆、技能；在接入对应 Hub 时还可使用知识库 / 定时任务等工具）
 - **技能包**：按需加载的领域专用工具
 
 智能体可在执行过程中通过天生工具（如 `skill_install` 和 `skill_load_main`）动态获取新技能。
 
 ### 知识库操作
 
-框架提供 5 个知识库操作作为天生工具：
+向 `AgentBrain` 传入 `KnowledgeHub` 后，会注册四个知识库天生工具：
 
 | 工具 | 说明 |
 |------|------|
-| `knowledge_list` | 列出所有条目，支持过滤（类别、数量、偏移量） |
-| `knowledge_add` | 添加新条目（标题、内容、类别、标签、元数据） |
-| `knowledge_delete` | 按 ID 删除条目（支持软删除/硬删除） |
-| `knowledge_search` | 语义搜索（查询、topK、类别、标签、阈值） |
-| `knowledge_read` | 按 ID 读取完整条目内容 |
+| `knowledge_list` | 列出条目；可选 **source** 过滤（非语义检索） |
+| `knowledge_add` | 新建条目（**source**、**title**、**content**）；可选 **metadata** |
+| `knowledge_delete` | 按 **id** 删除 |
+| `knowledge_search` | 按内容语义检索（**query**；可选 **topK**） |
 
 ### 执行过程中的用户输入
 
@@ -204,9 +206,19 @@ const agent = new AgentBrain({
 ```typescript
 class AgentBrain {
   constructor(options: AgentBrainOptions);
-  run(userInput: string): Promise<TaskResult>;
+  run(
+    userInput: string,
+    options?: {
+      /** 用于记忆 / 会话分组的稳定 id（例如定时任务） */
+      conversationId?: string;
+      /** 在 PERCEIVE 之后强制走 FastPathStrategy（跳过 ASSESS / PLAN / REFLECT） */
+      fastPath?: boolean;
+    },
+  ): Promise<TaskResult>;
 }
 ```
+
+`AgentBrainOptions` 还可选传入 **`knowledge`**（`KnowledgeHub`）与 **`cron`**（`CronHub`）。npm 包仅导出 **`CronHub`** 接口；具体调度实现由应用负责（可参考 `demo/`）。
 
 ### TaskResult
 

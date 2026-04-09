@@ -23,6 +23,8 @@ English | [中文](./README.zh-CN.md)
 | **Token Budget** | Context window optimization |
 | **Memory Integration** | Context-aware execution |
 | **Security Sandbox** | Rule-based permission guard (ALLOW / DENY / ASK) for all tool execution |
+| **Optional CronHub** | Implement `CronHub` and pass `cron` on `AgentBrain` to expose `cron_*` tools (sample adapter lives under `demo/`) |
+| **Prompt registry** | Cognitive and ReAct templates in `src/prompts` (shipped in `dist/prompts`); load via `getPromptByKeyword` / `renderPrompt` / `composePrompt` |
 
 ## Overview
 
@@ -41,7 +43,7 @@ The PERCEIVE phase simultaneously classifies task complexity, selecting an **exe
 The framework implements a nested ReAct architecture:
 
 - **Outer ReAct**: Five-phase cognitive loop (the brain's macro workflow)
-- **Inner ReAct**: Per-step execution loop within EXECUTE phase
+- **Inner ReAct**: Per-step execution loop within EXECUTE phase (system prompt from `react/plan-step-system.md`, including `react/inter-react-loop.md`)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -68,6 +70,7 @@ The framework implements a nested ReAct architecture:
 - **Memory integration** for context-aware execution
 - **Security sandbox** with rule-based permission control (ALLOW / DENY / ASK) for all tool and skill execution
 - **Extensible event system** for observability
+- **`run` options**: `conversationId` for stable memory/threading; `fastPath` to force the fast path after PERCEIVE (skip ASSESS / PLAN / REFLECT)
 
 ## Installation
 
@@ -123,22 +126,21 @@ The framework dynamically adjusts thinking mode weights for each cognitive phase
 
 ### Skills and Tools
 
-- **Innate Tools**: Built-in capabilities (skill management, knowledge CRUD)
+- **Innate Tools**: Built-in capabilities (filesystem, commands, web, memory, skills, optional knowledge / cron when hubs are wired)
 - **Skill Packages**: Domain-specific tools loaded on-demand
 
 The agent can dynamically acquire new skills during execution using innate tools like `skill_install` and `skill_load_main`.
 
 ### Knowledge Base Operations
 
-The framework provides 5 knowledge base operations as innate tools:
+When you pass a `KnowledgeHub` into `AgentBrain`, four innate KB tools are registered:
 
 | Tool | Description |
 |------|-------------|
-| `knowledge_list` | List all entries with filtering (category, limit, offset) |
-| `knowledge_add` | Add new entry (title, content, category, tags, metadata) |
-| `knowledge_delete` | Delete entry by ID (supports soft/hard delete) |
-| `knowledge_search` | Semantic search (query, topK, category, tags, threshold) |
-| `knowledge_read` | Read full entry content by ID |
+| `knowledge_list` | List entries; optional **source** filter (not semantic search) |
+| `knowledge_add` | Create entry (**source**, **title**, **content**); optional **metadata** |
+| `knowledge_delete` | Delete entry by **id** |
+| `knowledge_search` | Semantic search over content (**query**; optional **topK**) |
 
 ### User Input During Execution
 
@@ -198,9 +200,19 @@ Rules are matched last-to-first (later rules take higher priority). Patterns sup
 ```typescript
 class AgentBrain {
   constructor(options: AgentBrainOptions);
-  run(userInput: string): Promise<TaskResult>;
+  run(
+    userInput: string,
+    options?: {
+      /** Stable id for memory / conversation grouping (e.g. cron jobs). */
+      conversationId?: string;
+      /** After PERCEIVE, force FastPathStrategy (skip ASSESS / PLAN / REFLECT). */
+      fastPath?: boolean;
+    },
+  ): Promise<TaskResult>;
 }
 ```
+
+`AgentBrainOptions` also accepts optional **`knowledge`** (`KnowledgeHub`) and **`cron`** (`CronHub`). The npm package exports the **`CronHub`** contract only; a concrete scheduler belongs in your app (see `demo/`).
 
 ### TaskResult
 
