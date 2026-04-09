@@ -22,9 +22,8 @@ import { MemoryHub } from '../memory/memory-hub';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
 import type { SecuritySandbox, ActionCategory } from '../sandbox/security-sandbox';
-import { getPromptByKeyword, renderPrompt } from '../prompts/prompt-system';
-
-const REACT_PROTOCOL = getPromptByKeyword('react.protocol');
+import { renderPrompt } from '../prompts/prompt-system';
+import { buildPlanStepSystemPrompt } from './plan-step-prompt';
 
 // ============================================================
 // ReactLoop — Inner loop (Thought→Action→Observation) within EXECUTE phase
@@ -370,7 +369,7 @@ export class ReactLoop {
   }
 
   /**
-   * Build system prompt: base identity + ReAct protocol + plan overview + current step + memory.
+   * Build system prompt from template `react/plan-step-system.md`.
    */
   private buildSystemPrompt(
     ctx: ReactLoopContext,
@@ -378,28 +377,25 @@ export class ReactLoop {
     planStep: PlanStep,
     memoryText: string,
   ): string {
-    const parts: string[] = [
-      ctx.systemPrompt,
-      '',
-      REACT_PROTOCOL,
-      '',
-      ctx.thinkingGuidance,
-      '',
+    return buildPlanStepSystemPrompt({
+      baseSystemPrompt: ctx.systemPrompt,
+      thinkingGuidance: ctx.thinkingGuidance,
       planOverview,
-      '',
-      `[Current Step]`,
-      `Step ${planStep.id}: ${planStep.description}`,
-      'You are executing ONLY this step. Do not proceed to the next step.',
-    ];
-    // Skill catalog (pre-installed skills, fixed)
-    const skillCatalogText = this.buildSkillCatalogText();
-    if (skillCatalogText) {
-      parts.push('', skillCatalogText);
-    }
-    if (memoryText) {
-      parts.push('', '[Context from Memory]', memoryText);
-    }
-    return parts.join('\n');
+      currentStep: { id: planStep.id, description: planStep.description },
+      skillCatalogText: this.buildSkillCatalogText(),
+      skillGapsText: this.formatSkillGapsText(ctx.assessment),
+      memoryText,
+    });
+  }
+
+  private formatSkillGapsText(assessment: Assessment): string {
+    const missing = assessment.missingSkillCategories ?? [];
+    if (missing.length === 0) return '';
+    return (
+      '[Skill gaps]\n' +
+      `Required capabilities not yet covered by installed skills: ${missing.join(', ')}. ` +
+      'Consider skill_find / skill_install when appropriate.'
+    );
   }
 
   /**

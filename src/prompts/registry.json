@@ -37,10 +37,10 @@
       "description": "REFLECT phase: evaluate and replan decision"
     },
     {
-      "id": "react.protocol",
-      "path": "react/protocol.md",
+      "id": "react.inter_react_loop",
+      "path": "react/inter-react-loop.md",
       "category": "react",
-      "keywords": ["react.protocol", "ReAct", "react", "thought_action_observation"],
+      "keywords": ["react.inter_react_loop", "react.protocol", "ReAct", "react", "thought_action_observation"],
       "description": "Inner ReAct loop: Thought → Action → Observation"
     },
     {
@@ -49,6 +49,13 @@
       "category": "react",
       "keywords": ["react.execute-step-assistant", "react.execute_step", "plan_step.assistant"],
       "description": "Assistant message template for a single plan step (placeholders: strategy, stepId, stepDescription, expectedOutcome)"
+    },
+    {
+      "id": "react.plan_step_system",
+      "path": "react/plan-step-system.md",
+      "category": "react",
+      "keywords": ["react.plan_step_system", "react.plan-step-system"],
+      "description": "System prompt for PlanStep ReAct loop (placeholders: baseSystemPrompt, thinkingGuidance, planOverview, currentStepId, currentStepDescription, skillCatalogBlock, skillGapsBlock, memoryBlock)"
     },
     {
       "id": "fragments.skill-tools",
