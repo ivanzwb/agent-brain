@@ -1,28 +1,29 @@
 import { ToolDefinition } from '../innate-tools/types';
 
 /**
- * Conversation (Short-term Memory) tool Schema definitions
- * Used for tracking, searching, and compressing conversation history
+ * Conversation + long-term memory tool schemas: **capability boundaries** only.
+ * When to prefer conversation vs memory vs ask_user: see `fragments/recall-business.md` in prompts.
  */
 export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   conversation_track: {
     name: 'conversation_track',
-    description: 'Track a conversation message to short-term memory. Use this at the end of each conversation turn to record the message for future retrieval.',
+    description:
+      'Appends one message to the **short-term conversation log** for a given `conversationId`. **Mutates** stored session history. Roles: user | assistant | system.',
     parameters: {
       type: 'object',
       properties: {
         conversationId: {
           type: 'string',
-          description: 'Conversation ID to group messages from the same conversation for later compression',
+          description: 'Conversation/session id used to group messages',
         },
         role: {
           type: 'string',
-          description: 'Message role in the conversation: user (human), assistant (AI), or system (system message)',
+          description: 'Message role',
           enum: ['user', 'assistant', 'system'],
         },
         content: {
           type: 'string',
-          description: 'The actual message content/text that was exchanged in the conversation'
+          description: 'Message body text',
         },
       },
       required: ['conversationId', 'role', 'content'],
@@ -32,17 +33,18 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   conversation_search: {
     name: 'conversation_search',
-    description: 'Search through the current conversation history (short-term memory). Use this when you need to find specific information that was mentioned earlier in the current session. Returns matching messages with their timestamps.',
+    description:
+      '**Keyword-style search** over messages already stored for this conversation. Output: matching excerpts/metadata (implementation-defined). Does **not** search long-term memory.',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'The search query - keywords or phrases to look for in the conversation history'
+          description: 'Search string',
         },
         limit: {
           type: 'integer',
-          description: 'Maximum number of matching messages to return (default: 10, max: 50)',
+          description: 'Max matches (default: 10, max: 50)',
           default: 10,
           minimum: 1,
           maximum: 50,
@@ -55,13 +57,14 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   conversation_history: {
     name: 'conversation_history',
-    description: 'Retrieve the recent conversation history from short-term memory. Use this to recall what was discussed earlier in the current session for context continuity.',
+    description:
+      'Returns the **most recent N** messages for this conversation in chronological order. **No query string**—pure tail fetch.',
     parameters: {
       type: 'object',
       properties: {
         limit: {
           type: 'integer',
-          description: 'Maximum number of recent messages to retrieve (default: 20, max: 200)',
+          description: 'Max messages (default: 20, max: 200)',
           default: 20,
           minimum: 1,
           maximum: 200,
@@ -72,24 +75,21 @@ export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   },
 };
 
-/**
- * Memory (Long-term Memory) tool Schema definitions
- * Used for persistent storage and retrieval of important information, preferences, facts, etc.
- */
 export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   memory_search: {
     name: 'memory_search',
-    description: 'Semantic search through long-term memory. Use this to find previously stored information, facts, preferences, or past experiences. Returns results ranked by relevance with similarity scores.',
+    description:
+      '**Semantic search** over the **long-term** memory store. Output: ranked hits (e.g. with scores). Does **not** read arbitrary conversation logs.',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Natural language query describing what you are looking for (e.g., "user preferences for UI", "meeting about project X")'
+          description: 'Natural-language query',
         },
         topK: {
           type: 'integer',
-          description: 'Maximum number of results to return (default: 5, max: 50)',
+          description: 'Max results (default: 5, max: 50)',
           default: 5,
           minimum: 1,
           maximum: 50,
@@ -102,17 +102,18 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   memory_save: {
     name: 'memory_save',
-    description: 'Save a specific piece of information to long-term memory. Use this to remember important facts, user preferences, or procedural knowledge that should persist across sessions.',
+    description:
+      'Writes or updates a **key → value** entry in long-term memory. **Mutates** persistent store.',
     parameters: {
       type: 'object',
       properties: {
         key: {
           type: 'string',
-          description: 'A short, unique identifier for this memory (e.g., "user_theme", "api_key_location", "meeting_schedule"). Used for quick lookup later.'
+          description: 'Stable key / id for the record',
         },
         value: {
           type: 'string',
-          description: 'The actual content/fact to remember. Can be plain text or structured information.'
+          description: 'Stored payload (text or serialized content)',
         },
       },
       required: ['key', 'value'],
@@ -122,13 +123,14 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   memory_history: {
     name: 'memory_history',
-    description: 'List all memories currently stored in long-term memory. Use this to see what information has been saved.',
+    description:
+      'Lists stored long-term memory entries up to **limit**. Not semantic search.',
     parameters: {
       type: 'object',
       properties: {
         limit: {
           type: 'integer',
-          description: 'Maximum number of memories to return (default: 20, max: 100)',
+          description: 'Max entries (default: 20, max: 100)',
           default: 20,
           minimum: 1,
           maximum: 100,
@@ -140,13 +142,14 @@ export const MEMORY_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   memory_delete: {
     name: 'memory_delete',
-    description: 'Soft-delete a memory from long-term memory. The memory is marked as deleted but can be recovered. Use this when information becomes outdated or is no longer relevant.',
+    description:
+      '**Soft-deletes** one long-term memory record by **id**. **Mutates** store (tombstone / flag).',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'The unique memory ID to delete (obtained from memory_list or memory_search results)'
+          description: 'Memory record id from search/list results',
         },
       },
       required: ['id'],

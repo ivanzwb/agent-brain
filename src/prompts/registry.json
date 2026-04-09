@@ -49,6 +49,20 @@
       "category": "react",
       "keywords": ["react.execute-step-assistant", "react.execute_step", "plan_step.assistant"],
       "description": "Assistant message template for a single plan step (placeholders: strategy, stepId, stepDescription, expectedOutcome)"
+    },
+    {
+      "id": "fragments.skill-tools",
+      "path": "fragments/skill-tools.md",
+      "category": "fragments",
+      "keywords": ["fragments.skill-tools", "skill.tools", "skill.tool.policy", "skill.tool.planning", "skill.tool.runtime"],
+      "description": "Skill business logic + style; {{include:fragments/skill-tools.md}}"
+    },
+    {
+      "id": "fragments.recall-business",
+      "path": "fragments/recall-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.recall-business", "recall.business", "fragments.conversation-tool-runtime", "fragments.memory-tool-runtime", "conversation.tool.runtime", "memory.tool.runtime"],
+      "description": "Conversation vs memory recall policy; {{include:fragments/recall-business.md}}"
     }
   ]
 }

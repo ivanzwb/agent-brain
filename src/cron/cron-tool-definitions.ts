@@ -1,20 +1,24 @@
-import { ToolDefinition } from "../types";
+import { ToolDefinition } from '../innate-tools/types';
 
+/**
+ * Cron tool schemas: **capability boundaries**. When to offer scheduling is **agent / product policy** (prompts).
+ */
 const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   cron_list: {
     name: 'cron_list',
-    description: 'List all scheduled tasks. Use when user asks to see scheduled jobs, reminders, or recurring tasks.',
+    description:
+      'Lists scheduled jobs known to this runtime. Optional filter by **status**. Output: job records including ids.',
     parameters: {
       type: 'object',
       properties: {
         status: {
           type: 'string',
-          description: 'Filter by status: active, paused, completed, failed',
+          description: 'Filter: active | paused | completed | failed',
           enum: ['active', 'paused', 'completed', 'failed'],
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of jobs to return (default: 20)',
+          description: 'Max jobs to return (default: 20)',
           default: 20,
         },
       },
@@ -24,21 +28,22 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   cron_add: {
     name: 'cron_add',
-    description: 'Schedule a recurring task. Use when user asks to: remind them daily/weekly, do something every X hours, set up scheduled notifications, automate recurring actions. Convert natural language like "every day at 8am" to cron expression "0 8 * * *".',
+    description:
+      'Creates a **recurring** job: **cronExpression** (scheduler syntax) + **command** (payload string executed by the runtime, often natural language for an agent). **Mutates** the schedule store.',
     parameters: {
       type: 'object',
       properties: {
         name: {
           type: 'string',
-          description: 'A clear, descriptive name for the task (e.g., "daily_news_summary", "morning_reminder")',
+          description: 'Stable job name',
         },
         cronExpression: {
           type: 'string',
-          description: 'Cron expression for the schedule. Examples: "0 8 * * *" = daily at 8am, "0 */6 * * *" = every 6 hours, "0 9 * * 1-5" = weekdays at 9am, "30 18 * * *" = daily at 6:30pm, "0 0 * * *" = midnight daily',
+          description: 'Standard cron expression for this runtime (e.g. "0 8 * * *")',
         },
         command: {
           type: 'string',
-          description: 'The action to perform. Can be a natural language instruction that will be executed by an AI agent (e.g., "summarize the past 24 hours news and send to me")',
+          description: 'Command / instruction string stored with the job',
         },
       },
       required: ['name', 'cronExpression', 'command'],
@@ -48,13 +53,13 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   cron_delete: {
     name: 'cron_delete',
-    description: 'Cancel or delete a scheduled task. Use when user asks to remove a scheduled reminder or recurring task.',
+    description: 'Removes a scheduled job by **id**. **Mutates** the schedule store.',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'Job ID to delete (from cron_list result)',
+          description: 'Job id from cron_list',
         },
       },
       required: ['id'],
@@ -64,13 +69,13 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   cron_pause: {
     name: 'cron_pause',
-    description: 'Temporarily pause a scheduled task without deleting it.',
+    description: 'Pauses a job by **id** without deleting it.',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'Job ID to pause (from cron_list result)',
+          description: 'Job id from cron_list',
         },
       },
       required: ['id'],
@@ -80,13 +85,13 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   cron_resume: {
     name: 'cron_resume',
-    description: 'Resume a previously paused scheduled task.',
+    description: 'Resumes a previously paused job by **id**.',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'Job ID to resume (from cron_list result)',
+          description: 'Job id from cron_list',
         },
       },
       required: ['id'],
@@ -96,13 +101,13 @@ const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   cron_run_now: {
     name: 'cron_run_now',
-    description: 'Execute a scheduled task immediately instead of waiting for its scheduled time.',
+    description: 'Triggers immediate execution of a job by **id** (outside its normal schedule).',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'Job ID to run (from cron_list result)',
+          description: 'Job id from cron_list',
         },
       },
       required: ['id'],

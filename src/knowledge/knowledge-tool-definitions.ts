@@ -1,19 +1,19 @@
 import { ToolDefinition } from '../innate-tools/types';
 
 /**
- * Knowledge Base tool Schema definitions
- * Used for managing and querying structured knowledge documents
+ * Knowledge-base tool schemas: **capability boundaries** (CRUD + search over the KB store).
  */
 export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   knowledge_list: {
     name: 'knowledge_list',
-    description: 'List all entries in the knowledge base.',
+    description:
+      'Lists entries in the local knowledge base. Optional **source** filter. Does **not** perform semantic search.',
     parameters: {
       type: 'object',
       properties: {
         source: {
           type: 'string',
-          description: 'Optional filter: only show entries in this category',
+          description: 'Optional category / source filter',
         },
       },
       required: [],
@@ -23,25 +23,26 @@ export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   knowledge_add: {
     name: 'knowledge_add',
-    description: 'Add a new knowledge entry to the knowledge base.',
+    description:
+      'Creates a knowledge entry (**source**, **title**, **content**). **Mutates** the KB. Optional **metadata** object.',
     parameters: {
       type: 'object',
       properties: {
         source: {
           type: 'string',
-          description: 'Source or category for the knowledge entry',
+          description: 'Category or source label',
         },
         title: {
           type: 'string',
-          description: 'A concise, descriptive title for this knowledge entry',
+          description: 'Entry title',
         },
         content: {
           type: 'string',
-          description: 'The main content in Markdown format',
+          description: 'Body (often Markdown)',
         },
         metadata: {
           type: 'object',
-          description: 'Optional additional metadata as key-value pairs',
+          description: 'Optional key-value metadata',
         },
       },
       required: ['source', 'title', 'content'],
@@ -51,13 +52,13 @@ export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   knowledge_delete: {
     name: 'knowledge_delete',
-    description: 'Delete a knowledge base entry by its ID.',
+    description: 'Deletes one KB entry by **id**. **Mutates** the store.',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'The unique ID of the knowledge entry to delete',
+          description: 'Entry id',
         },
       },
       required: ['id'],
@@ -67,17 +68,18 @@ export const KNOWLEDGE_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   knowledge_search: {
     name: 'knowledge_search',
-    description: 'Semantic search through the knowledge base.',
+    description:
+      '**Semantic search** over KB **content**. Input: **query**; optional **topK** cap on hits.',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Natural language search query',
+          description: 'Search query',
         },
         topK: {
           type: 'number',
-          description: 'Maximum number of results to return',
+          description: 'Max results',
         },
       },
       required: ['query'],

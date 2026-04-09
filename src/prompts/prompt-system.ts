@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { CognitivePhase } from '../types';
-import { interpolate, loadPrompt } from './load-prompt';
+import { clearPromptTemplateCache, interpolate, loadPrompt } from './load-prompt';
 
 // ============================================================
 // Prompt registry — keyword → template path (directory = category)
@@ -90,6 +90,7 @@ function ensureIndexes(): void {
  * Clears template file cache for paths that were registered.
  */
 export function reloadPromptRegistry(): void {
+  clearPromptTemplateCache();
   keywordToPath = undefined;
   idToEntry = undefined;
   ensureIndexes();

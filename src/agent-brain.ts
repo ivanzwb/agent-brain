@@ -427,6 +427,14 @@ export class AgentBrain {
     );
 
     const guidance = this.scheduler.generateGuidance(CognitivePhase.EXECUTE);
+    const phasePrompt = this.scheduler.getPhasePrompt(CognitivePhase.EXECUTE);
+    const executeSystemPrompt = [
+      this.config.systemPrompt,
+      '',
+      guidance,
+      '',
+      phasePrompt,
+    ].join('\n');
 
     const loop = new ReactLoop({
       controller,
@@ -442,7 +450,7 @@ export class AgentBrain {
 
     return loop.run({
       conversationId,
-      systemPrompt: this.config.systemPrompt,
+      systemPrompt: executeSystemPrompt,
       plan,
       assessment,
       thinkingGuidance: guidance,

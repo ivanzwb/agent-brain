@@ -45,7 +45,7 @@ export type {
   PromptTemplateEntry,
   ComposePromptOptions,
 } from './prompts/prompt-system';
-export { interpolate, loadPrompt } from './prompts/load-prompt';
+export { clearPromptTemplateCache, interpolate, loadPrompt } from './prompts/load-prompt';
 
 // --- All types, enums & contracts ---
 export {
