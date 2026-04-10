@@ -17,11 +17,6 @@ export function normalizeToolPolicyKey(s: string): string {
   return s.normalize('NFKC').trim().toLowerCase();
 }
 
-/** True when two tool ids match after {@link normalizeToolPolicyKey}. */
-export function toolPolicyKeysEqual(a: string, b: string): boolean {
-  return normalizeToolPolicyKey(a) === normalizeToolPolicyKey(b);
-}
-
 /**
  * Models sometimes embed extra `skill:...` segments in the logical segment — normalize here.
  */

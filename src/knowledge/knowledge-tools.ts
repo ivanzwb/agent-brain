@@ -1,3 +1,4 @@
+import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
 import type { KnowledgeHub } from './knowledge-hub';
 import { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge-tool-definitions';
@@ -40,4 +41,11 @@ export class KnowledgeSearchTool implements InnateTool {
     const topK = args['topK'] as number | undefined;
     return this.hub.knowledge_search(query, topK);
   }
+}
+
+export function registerKnowledgeTools(hub: InnateToolHub, knowledge: KnowledgeHub) {
+  hub.register(new KnowledgeListTool(knowledge));
+  hub.register(new KnowledgeAddTool(knowledge));
+  hub.register(new KnowledgeDeleteTool(knowledge));
+  hub.register(new KnowledgeSearchTool(knowledge));
 }

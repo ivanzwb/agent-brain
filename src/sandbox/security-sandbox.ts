@@ -1,6 +1,8 @@
 import * as path from 'path';
 import * as os from 'os';
 
+import type { InnateToolHub } from '../innate-tools/innate-tool-hub';
+
 // ============================================================
 // Security Sandbox — Permission-based execution guard
 // ============================================================
@@ -58,26 +60,29 @@ export interface PermissionDecision {
  * Permission checks for the execute-phase ReAct loop. Pass an instance via {@link AgentBrainOptions.sandbox},
  * or omit to use the built-in rule sandbox (ASK → `ask_user`).
  *
- * For custom behavior, **subclass** and override {@link checkPermission}, {@link prepareToolExecution},
- * and/or {@link askPermission}. Use {@link resolvePath} from overrides when normalizing paths.
+ * For custom behavior, **subclass** and override only {@link askPermission}.
+ * Use {@link resolvePath} from overrides when normalizing paths.
  */
 export class SecuritySandbox {
   private readonly rules: PermissionRule[] = [];
   private readonly _workingDirectory: string;
+  private readonly _innateToolHub: InnateToolHub;
 
   /**
    * Built-in rule sandbox: no rules until added via {@link addRule} / {@link addRules}
    * (subclass or host wrapper). When no rule matches, permission is always **ASK**.
    *
+   * @param innateToolHub Hub to prompt the user for permission via `requestUserInput`.
    * @param workingDirectory Resolved working directory for tools; defaults to `os.tmpdir()/.bios-agent`.
    *        When using AgentBrain with the built-in sandbox, set `AgentConfig.workingDirectory`.
    */
-  constructor(workingDirectory?: string) {
+  constructor(innateToolHub: InnateToolHub, workingDirectory?: string) {
     if (workingDirectory) {
       this._workingDirectory = path.resolve(workingDirectory);
     } else {
       this._workingDirectory = path.join(os.tmpdir(), `.bios-agent`);
     }
+    this._innateToolHub = innateToolHub;
   }
 
   /** The resolved working directory for the sandbox. */
@@ -86,10 +91,34 @@ export class SecuritySandbox {
   }
 
   /**
-   * Default: deny ASK (return `false`). Override or subclass (e.g. wire to `ask_user`).
+   * Convenience method that computes action and permissionTarget from tool metadata.
+   * Uses the innateToolHub to determine action category and permission target.
    */
-  async askPermission(_request: PermissionRequest): Promise<boolean> {
-    return false;
+  async checkToolPermission(
+    toolName: string,
+    args: Record<string, unknown>,
+  ): Promise<string | undefined> {
+    const action: ActionCategory = this._innateToolHub.getActionCategory(toolName) ?? 'skill_exec';
+    const permissionTarget = this._innateToolHub.hasTool(toolName)
+      ? this._innateToolHub.getPermissionTarget(toolName, args)
+      : `${(args['skillName'] as string) ?? ''}:${toolName}`;
+
+    return this.prepareToolExecution(action, toolName, permissionTarget, args);
+  }
+
+  /**
+   * Default: ask user via innateToolHub.
+   * Override or subclass for custom behavior.
+   */
+  async askPermission(request: PermissionRequest): Promise<boolean> {
+    const question =
+      `[Security Sandbox] Permission required:\n` +
+      `  Action: ${request.action}\n` +
+      `  Target: ${request.target}\n` +
+      (request.detail ? `  Detail: ${request.detail}\n` : '') +
+      `\nAllow this action? (yes/no)`;
+    const answer = await this._innateToolHub.requestUserInput(question);
+    return /^(y|yes|allow|ok|确认|允许|是)$/i.test(answer.trim());
   }
 
   // ── Rule management ──────────────────────────────────────

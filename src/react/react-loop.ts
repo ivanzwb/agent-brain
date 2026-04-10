@@ -341,13 +341,7 @@ export class ReactLoop {
     args: Record<string, unknown>,
   ): Promise<string | undefined> {
     if (!this.sandbox) return undefined;
-
-    const action: ActionCategory = this.innateToolHub.getActionCategory(toolName) ?? 'skill_exec';
-    const permissionTarget = this.innateToolHub.hasTool(toolName)
-      ? this.innateToolHub.getPermissionTarget(toolName, args)
-      : `${(args['skillName'] as string) ?? ''}:${toolName}`;
-
-    return this.sandbox.prepareToolExecution(action, toolName, permissionTarget, args);
+    return this.sandbox.checkToolPermission(toolName, args);
   }
 
   /**

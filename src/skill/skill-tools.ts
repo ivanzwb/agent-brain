@@ -1,3 +1,4 @@
+import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
 import type { SkillHub } from './skill-hub';
 import { SKILL_TOOL_DEFINITIONS } from './skill-tool-definitions';
@@ -54,4 +55,13 @@ export class SkillListToolsTool implements InnateTool {
     const name = args['name'] as string;
     return this.hub.skill_list_tools(name);
   }
+}
+
+export function registerSkillTools(hub: InnateToolHub, skills: SkillHub) {
+  hub.register(new SkillFindTool(skills));
+  hub.register(new SkillListTool(skills));
+  hub.register(new SkillInstallTool(skills));
+  hub.register(new SkillLoadMainTool(skills));
+  hub.register(new SkillLoadReferenceTool(skills));
+  hub.register(new SkillListToolsTool(skills));
 }

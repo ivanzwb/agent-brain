@@ -35,24 +35,6 @@ function generateTaskId(): string {
   return `task_${ts}_${rand}`;
 }
 
-/** Default rule sandbox with ASK routed through {@link InnateToolHub.requestUserInput}. */
-class InnateAskSecuritySandbox extends SecuritySandbox {
-  constructor(workingDirectory: string | undefined, private readonly innateToolHub: InnateToolHub) {
-    super(workingDirectory);
-  }
-
-  override async askPermission(request: PermissionRequest): Promise<boolean> {
-    const question =
-      `[Security Sandbox] Permission required:\n` +
-      `  Action: ${request.action}\n` +
-      `  Target: ${request.target}\n` +
-      (request.detail ? `  Detail: ${request.detail}\n` : '') +
-      `\nAllow this action? (yes/no)`;
-    const answer = await this.innateToolHub.requestUserInput(question);
-    return /^(y|yes|allow|ok|确认|允许|是)$/i.test(answer.trim());
-  }
-}
-
 // ============================================================
 // AgentBrain — Five-phase cognitive loop coordinator
 //
@@ -84,7 +66,7 @@ export class AgentBrain {
     // Security sandbox: host subclass of SecuritySandbox or built-in rule sandbox + ask_user ASK
     this.sandbox = opts.sandbox
       ? opts.sandbox
-      : new InnateAskSecuritySandbox(this.config.workingDirectory, this.innateToolHub);
+      : new SecuritySandbox(this.innateToolHub, this.config.workingDirectory);
 
     this.memory = opts.memory;
     this.knowledge = opts.knowledge;

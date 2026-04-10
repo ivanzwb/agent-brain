@@ -1043,8 +1043,7 @@ All step logs and cognitive artifacts are persisted, supporting:
 
 | Interface | Direction | Framework Expectation |
 |-----------|-----------|----------------------|
-| Model client interface (IModelClient) | Out | Pass in message list and tool declarations, return model response |
-| Token counting interface (ITokenCounter) | In | Calculate token count for text and tool declarations; used for budget management |
+| Model client interface (IModelClient) | Out | Pass in message list and tool declarations, return model response; includes token counting methods |
 | Skill center (SkillHub) | Bidirectional | Query skill list, load tool definitions, execute skill tools |
 | Memory center (MemoryHub) | Bidirectional | Retrieve relevant memories, track conversation messages |
 | Security sandbox (SecuritySandbox) | In | Permission-based execution guard; rule management and permission checking |
@@ -1062,10 +1061,7 @@ interface IHub {
 /** LLM client */
 interface IModelClient {
   chat(messages: Message[], tools?: ToolDefinition[]): Promise<ModelResponse>;
-}
-
-/** Token counter (different models have different tokenizers; implemented externally) */
-interface ITokenCounter {
+  /** Count tokens */
   count(text: string): number;
   countTools(tools: ToolDefinition[]): number;
 }
@@ -1106,7 +1102,6 @@ class SecuritySandbox {
 ```typescript
 interface AgentBrainOptions {
   model: IModelClient;
-  tokenCounter: ITokenCounter;
   memory: MemoryHub;
   /** Innate tool providers */
   tools: IHub[];
@@ -1142,7 +1137,7 @@ When `sandbox` is omitted, AgentBrain uses a built-in rule sandbox subclass whos
 | Context Assembly Strategy | Strategy pattern | Replace priority ordering and compression algorithms |
 | Termination Condition | Condition chain | Add custom termination conditions |
 | Observation Result Formatter | Formatter | Define specialized result formatting for different tool types |
-| Security Sandbox | Subclass `SecuritySandbox` or built-in | Override `checkPermission`, `prepareToolExecution`, `askPermission` as needed; base class exposes `workingDirectory` (ASK → `ask_user` when using built-in wiring) |
+| Security Sandbox | Subclass `SecuritySandbox` or built-in | Override only `askPermission`; base class exposes `workingDirectory` (ASK → `ask_user` when using built-in wiring) |
 
 ---
 
@@ -1285,7 +1280,6 @@ The framework does not operate independently; it depends on the following abstra
 | Interface | Implementor | Input | Output | Purpose |
 |-----------|-------------|-------|--------|---------|
 | IModelClient | External | Message list + tool declarations | Model response | Reasoning across all cognitive phases |
-| ITokenCounter | External | Text / tool list | Token count | Token budget management |
 | SkillHub | External | Skill name + tool name + args | Execution result | Skill management and tool execution |
 | MemoryHub | External | Query text / role + content | Memory fragments | Memory retrieval and message tracking |
 | IEventPublisher | External (optional) | Event type + payload | — | Observability |

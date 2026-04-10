@@ -1,8 +1,14 @@
 import { TokenTracker } from '../../src/token/token-tracker';
 import { Message } from '../../src/types';
-import type { ITokenCounter, ToolDefinition } from '../../src/types';
+import type { IModelClient, ToolDefinition } from '../../src/types';
 
-class MockTokenCounter implements ITokenCounter {
+class MockTokenCounter implements IModelClient {
+  readonly contextWindow = 128000;
+
+  chat(messages: Message[], tools?: ToolDefinition[]): Promise<any> {
+    throw new Error('Not implemented');
+  }
+
   count(text: string): number {
     return Math.ceil(text.length / 4);
   }

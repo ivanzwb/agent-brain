@@ -1,3 +1,4 @@
+import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
 import type { CronHub } from './cron-hub';
 import { CRON_TOOL_DEFINITIONS } from './cron-tool-definitions';
@@ -58,4 +59,13 @@ export class CronRunNowTool implements InnateTool {
     const id = args['id'] as string;
     return this.hub.cron_run_now(id);
   }
+}
+
+export function registerCronTools(hub: InnateToolHub, cron: CronHub) {
+  hub.register(new CronListTool(cron));
+  hub.register(new CronAddTool(cron));
+  hub.register(new CronDeleteTool(cron));
+  hub.register(new CronPauseTool(cron));
+  hub.register(new CronResumeTool(cron));
+  hub.register(new CronRunNowTool(cron));
 }

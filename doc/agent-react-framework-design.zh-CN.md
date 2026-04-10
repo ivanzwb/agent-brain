@@ -1010,8 +1010,7 @@ REFLECT 阶段判定需重规划时，回到 PLAN 阶段重新制定计划并再
 
 | 接口 | 方向 | 框架的期望 |
 |------|------|-----------|
-| 模型调用接口 (IModelClient) | 出 | 传入消息列表与工具声明，返回模型回复 |
-| Token 计数接口 (ITokenCounter) | 入 | 计算文本和工具声明的 token 数，用于预算管理 |
+| 模型调用接口 (IModelClient) | 出 | 传入消息列表与工具声明，返回模型回复；包含 token 计数方法 |
 | 技能中心 (SkillHub) | 双向 | 查询技能列表、加载工具定义、执行技能工具 |
 | 记忆中心 (MemoryHub) | 双向 | 检索相关记忆、追踪对话消息 |
 | 安全沙箱 (SecuritySandbox) | 入 | 基于规则的执行权限守卫；规则管理与权限检查 |
@@ -1029,10 +1028,7 @@ interface IHub {
 /** LLM 客户端 */
 interface IModelClient {
   chat(messages: Message[], tools?: ToolDefinition[]): Promise<ModelResponse>;
-}
-
-/** Token 计数器（不同模型的 tokenizer 不同，由外部实现） */
-interface ITokenCounter {
+  /** 计算 token 数 */
   count(text: string): number;
   countTools(tools: ToolDefinition[]): number;
 }
@@ -1073,7 +1069,6 @@ class SecuritySandbox {
 ```typescript
 interface AgentBrainOptions {
   model: IModelClient;
-  tokenCounter: ITokenCounter;
   memory: MemoryHub;
   /** 天生工具提供者 */
   tools: IHub[];
@@ -1109,7 +1104,7 @@ interface AgentBrainOptions {
 | 上下文组装策略 | 策略模式 | 可替换优先级排序与压缩算法 |
 | 终止条件判定 | 条件链 | 可添加自定义终止条件 |
 | 观察结果格式化 | 格式化器 | 可为不同工具类型定义专属的结果格式化方式 |
-| 安全沙箱 | 继承 `SecuritySandbox` 或内置 | 按需覆盖 `checkPermission`、`prepareToolExecution`、`askPermission`；基类提供 `workingDirectory`（内置接线时 ASK → `ask_user`） |
+| 安全沙箱 | 继承 `SecuritySandbox` 或内置 | 只需覆盖 `askPermission`；基类提供 `workingDirectory`（内置接线时 ASK → `ask_user`） |
 
 ---
 
@@ -1252,7 +1247,6 @@ interface AgentBrainOptions {
 | 接口 | 实现者 | 输入 | 输出 | 用途 |
 |------|--------|------|------|------|
 | IModelClient | 外部 | 消息列表 + 工具声明 | 模型回复 | 所有认知阶段的推理 |
-| ITokenCounter | 外部 | 文本 / 工具列表 | token 数 | Token 预算管理 |
 | SkillHub | 外部 | 技能名 + 工具名 + 参数 | 执行结果 | 技能管理与工具执行 |
 | MemoryHub | 外部 | 查询文本 / 角色+内容 | 记忆片段 | 记忆检索与消息追踪 |
 | IEventPublisher | 外部（可选） | 事件类型 + 载荷 | — | 可观测性 |

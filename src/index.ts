@@ -73,7 +73,6 @@ export type {
   AgentBrainOptions,
   // Framework contracts
   IModelClient,
-  ITokenCounter,
   IHub,
   InnateTool,
   IEventPublisher,

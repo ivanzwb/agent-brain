@@ -1,11 +1,31 @@
 import { CronExpressionParser } from 'cron-parser';
 import type { CronHub } from '../../src/cron/cron-hub';
-import type { CronJobTriggerHandler, CronScheduledJobSnapshot } from './cron-types';
 import { CRON_TOOL_DEFINITIONS } from '../../src/cron/cron-tool-definitions';
 import type { ToolDefinition } from '../../src/innate-tools/types';
 type Timeout = ReturnType<typeof setTimeout>;
 
 const MAX_TIMEOUT_MS = 2147483647;
+
+export type CronJobStatus = 'active' | 'paused' | 'completed' | 'failed';
+
+/** Payload passed to `onJobTrigger` (and listed via `cron_list`). */
+export interface CronScheduledJobSnapshot {
+  id: string;
+  name: string;
+  cronExpression: string;
+  /** Natural-language or structured task string executed by the host (e.g. AgentBrain.run). */
+  command: string;
+  status: CronJobStatus;
+  resolvedResources?: Record<string, unknown>;
+  nextRunTime?: string;
+  lastRunTime?: string;
+  lastStatus?: 'success' | 'error';
+  lastError?: string;
+  createdAt: string;
+}
+
+export type CronJobTriggerHandler = (job: CronScheduledJobSnapshot) => Promise<void>;
+
 
 interface InternalJob extends CronScheduledJobSnapshot {
   timeout?: Timeout;

@@ -1,5 +1,5 @@
 import type {
-  ITokenCounter,
+  IModelClient,
   Message,
   ToolDefinition,
   TokenUsage,
@@ -13,7 +13,7 @@ export class TokenTracker {
   private _promptTokens = 0;
   private _completionTokens = 0;
 
-  constructor(private readonly counter: ITokenCounter) {}
+  constructor(private readonly counter: IModelClient) {}
 
   /** Track prompt tokens for one LLM call */
   trackPrompt(messages: Message[], tools?: ToolDefinition[]): void {

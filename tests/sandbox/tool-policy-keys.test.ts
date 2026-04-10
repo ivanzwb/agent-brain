@@ -6,7 +6,6 @@ import {
   parseSkillDotToolId,
   resolveSkillToolHubName,
   skillToolHubKey,
-  toolPolicyKeysEqual,
   isPathContainedInRoot,
   pathMatchesBlockedPrefix,
 } from '../../src/sandbox/tool-policy-keys';
@@ -32,11 +31,6 @@ describe('tool-policy-keys', () => {
     });
   });
 
-  describe('toolPolicyKeysEqual', () => {
-    it('matches after normalization', () => {
-      expect(toolPolicyKeysEqual('Skill_FIND', 'skill_find')).toBe(true);
-    });
-  });
 
   describe('resolveSkillToolHubName', () => {
     it('normalizes nested skill logical segment', () => {

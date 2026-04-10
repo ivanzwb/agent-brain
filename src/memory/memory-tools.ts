@@ -1,6 +1,8 @@
+import { register } from 'module';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
 import type { MemoryHub } from './memory-hub';
 import { MEMORY_TOOL_DEFINITIONS, CONVERSATION_TOOL_DEFINITIONS } from './memory-tool-definitions';
+import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 
 export class MemorySearchTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_search;
@@ -69,4 +71,14 @@ export class ConversationHistoryTool implements InnateTool {
     const limit = args['limit'] as number | undefined;
     return this.hub.conversation_history(limit);
   }
+}
+
+export function registerMemoryTools(hub: InnateToolHub, memory: MemoryHub) {
+  hub.register(new ConversationTrackTool(memory));
+  hub.register(new ConversationSearchTool(memory));
+  hub.register(new ConversationHistoryTool(memory));
+  hub.register(new MemorySearchTool(memory));
+  hub.register(new MemorySaveTool(memory));
+  hub.register(new MemoryHistoryTool(memory));
+  hub.register(new MemoryDeleteTool(memory));
 }

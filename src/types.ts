@@ -286,16 +286,6 @@ export function resolveConfig(
 
 // ============================================================
 // Token Counting - Used for statistics and prompt trimming
-// ============================================================
-
-/** Token counter implemented by external code (tokenizers vary by model) */
-export interface ITokenCounter {
-  /** Count tokens in text */
-  count(text: string): number;
-  /** Count tokens in a set of tool definitions */
-  countTools(tools: ToolDefinition[]): number;
-}
-
 /** Token usage statistics for a single task */
 export interface TokenUsage {
   /** Total input tokens (cumulative prompt tokens from all LLM calls) */
@@ -307,11 +297,9 @@ export interface TokenUsage {
 }
 
 // ============================================================
-// Framework Contracts - Interfaces to be implemented by users
-// ============================================================
 
 /** LLM client supporting tool/function calling and token counting */
-export interface IModelClient extends ITokenCounter {
+export interface IModelClient {
   /** Maximum context window size (in tokens) supported by this model */
   readonly contextWindow: number;
 
@@ -319,6 +307,11 @@ export interface IModelClient extends ITokenCounter {
     messages: Message[],
     tools?: ToolDefinition[],
   ): Promise<ModelResponse>;
+
+  /** Count tokens in text */
+  count(text: string): number;
+  /** Count tokens in a set of tool definitions */
+  countTools(tools: ToolDefinition[]): number;
 }
 
 
@@ -353,7 +346,7 @@ export interface AgentBrainOptions {
   /**
    * Custom security sandbox (e.g. DB + UI approval). Omit to use the built-in rule sandbox whose
    * `askPermission` routes to `ask_user`. Subclass {@link SecuritySandbox} and override
-   * `checkPermission` / `prepareToolExecution` / `askPermission` as needed.
+   * `askPermission` as needed.
    */
   sandbox?: SecuritySandbox;
   config: AgentConfig;
