@@ -1055,18 +1055,16 @@ interface IEventPublisher {
   publish(type: string, payload: unknown): void;
 }
 
-/** 安全沙箱 — 基于规则的执行权限守卫 */
-interface SecuritySandbox {
-  /** 检查工具操作的权限。可通过 AskHandler 向用户确认。 */
+/** 安全沙箱 — 权限守卫（自定义策略请继承此类） */
+class SecuritySandbox {
   checkPermission(request: PermissionRequest): Promise<PermissionDecision>;
-  /** 将相对路径解析为沙箱工作目录下的绝对路径。 */
-  resolvePath(filePath: string): string;
-  /** 沙箱工作目录（用作 cmd 工具的默认 cwd）。 */
-  readonly workingDirectory: string;
-  /** 规则管理 */
-  addRule(rule: PermissionRule): void;
-  removeRules(action: ActionCategory, pattern?: string): number;
-  getRules(): PermissionRule[];
+  prepareToolExecution(
+    action: ActionCategory,
+    toolName: string,
+    permissionTarget: string,
+    args: Record<string, unknown>,
+  ): Promise<string | undefined>;
+  askPermission(request: PermissionRequest): Promise<boolean>;
 }
 ```
 
@@ -1082,8 +1080,8 @@ interface AgentBrainOptions {
   /** 技能中心 */
   skills: SkillHub;
   config: AgentConfig;
-  /** 安全沙箱配置 */
-  sandbox?: SandboxConfig;
+  /** 自定义沙箱（`SecuritySandbox` 的子类）；省略则使用内置 */
+  sandbox?: SecuritySandbox;
   eventPublisher?: IEventPublisher;
 }
 ```
@@ -1098,14 +1096,9 @@ interface AgentBrainOptions {
 | heartbeatTimeoutMs | 60,000 | 心跳超时阈值 |
 | maxConsecutiveFailures | 3 | 连续失败次数上限 |
 | maxReplans | 2 | REFLECT 触发重规划的最大次数 |
+| workingDirectory | —（内置默认在系统临时目录下） | 仅内置沙箱：工具工作目录，写在 `AgentConfig` 上 |
 
-#### SandboxConfig（沙箱配置）
-
-| 配置 | 默认值 | 说明 |
-|------|-------|------|
-| workingDirectory | `os.tmpdir()/.bios-agent` | 所有工具的默认工作目录；相对路径基于此目录解析 |
-| defaultPermission | `ASK` | 无匹配规则时的默认权限级别（`ALLOW`、`DENY` 或 `ASK`） |
-| rules | `[]` | 构造时应用的初始权限规则列表 |
+未传 `sandbox` 时，AgentBrain 使用内置规则沙箱子类，其 `askPermission` 走 `ask_user`。类 `SecuritySandbox` 初始无规则；无匹配时固定 **ASK**。规则由子类/包装或构造后 `addRule` 提供。直接使用：`new SecuritySandbox(workingDirectory?)`（自定义 ASK 请覆盖 `askPermission`）。
 
 ### 9.4 可插拔组件
 
@@ -1116,7 +1109,7 @@ interface AgentBrainOptions {
 | 上下文组装策略 | 策略模式 | 可替换优先级排序与压缩算法 |
 | 终止条件判定 | 条件链 | 可添加自定义终止条件 |
 | 观察结果格式化 | 格式化器 | 可为不同工具类型定义专属的结果格式化方式 |
-| 安全沙箱 | 构造配置 | 可自定义权限规则、工作目录和 ASK 处理器 |
+| 安全沙箱 | 继承 `SecuritySandbox` 或内置 | 按需覆盖 `checkPermission`、`prepareToolExecution`、`askPermission`；基类提供 `workingDirectory`（内置接线时 ASK → `ask_user`） |
 
 ---
 

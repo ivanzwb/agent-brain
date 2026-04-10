@@ -179,25 +179,42 @@ const agent = new AgentBrain({
 
 每个天生工具自声明其 `actionCategory`（如 `fs_read`、`cmd_exec`、`web_fetch`）和 `permissionTargetArgs`，实现无需硬编码映射的开闭原则权限检查。技能工具默认使用 `skill_exec` 类别。
 
+自定义规则与工作目录：
+
 ```typescript
+import { AgentBrain, SecuritySandbox } from '@biosbot/agent-brain';
+
+const ruleSandbox = new SecuritySandbox('./agent-workspace');
+ruleSandbox.addRules([
+  { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
+  { action: 'fs_delete', permission: 'DENY' },
+  { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
+]);
+
 const agent = new AgentBrain({
   model,
   skills,
   memory,
-  sandbox: {
-    workingDirectory: './agent-workspace',
-    defaultPermission: 'ASK',
-    rules: [
-      { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
-      { action: 'fs_delete', permission: 'DENY' },
-      { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
-    ],
-  },
-  config: { systemPrompt: '你是一个有帮助的 AI 助手。', modelContextSize: 128000 },
+  sandbox: ruleSandbox,
+  config: { systemPrompt: '你是一个有帮助的 AI 助手。' },
 });
 ```
 
-规则按从后往前的顺序匹配（后添加的规则优先级更高）。模式支持 glob（`*`、`**`）和正则表达式（`/pattern/`）。
+不传 `sandbox` 时使用内置沙箱，通过 `config.workingDirectory` 设置路径，ASK 走 `ask_user`：
+
+```typescript
+new AgentBrain({
+  model,
+  skills,
+  memory,
+  config: {
+    systemPrompt: '你是一个有帮助的 AI 助手。',
+    workingDirectory: './agent-workspace',
+  },
+});
+```
+
+规则按从后往前匹配；模式支持 glob（`*`、`**`）与正则（`/pattern/`）。自定义策略请**继承** `SecuritySandbox`，按需覆盖 `checkPermission`、`prepareToolExecution`（执行前路径与参数注入）、`askPermission`。
 
 ## API 参考
 
@@ -250,9 +267,7 @@ interface TaskResult {
 | `heartbeatTimeoutMs` | 60000 | 心跳超时阈值 |
 | `maxConsecutiveFailures` | 3 | 连续失败次数上限 |
 | `maxReplans` | 2 | REFLECT 触发重规划的最大次数 |
-| `sandbox.workingDirectory` | `os.tmpdir()/.bios-agent` | 所有工具的默认工作目录 |
-| `sandbox.defaultPermission` | `ASK` | 无匹配规则时的默认权限（`ALLOW`、`DENY`、`ASK`） |
-| `sandbox.rules` | `[]` | 初始权限规则（`{ action, pattern?, permission }`） |
+| `workingDirectory` | —（内置沙箱默认 `os.tmpdir()/.bios-agent`） | 使用 AgentBrain 内置沙箱时的工具工作目录 |
 
 ## 环境要求
 

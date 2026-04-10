@@ -9,9 +9,9 @@ import { SkillHubAdapter } from './skill-hub-adapter';
 import { MemoryHubAdapter } from './memory-hub-adapter';
 import * as readline from 'readline';
 
-process.env.OPENAI_API_KEY = '';
-process.env.OPENAI_BASE_URL = '';
-process.env.OPENAI_MODEL = '';
+process.env.OPENAI_API_KEY = 'sk-f1450f3f4f804d0487851efa26009094';
+process.env.OPENAI_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+process.env.OPENAI_MODEL = 'qwen-plus-0112';
 process.env.SANDBOX_DIR = process.env.SANDBOX_DIR ?? './sandbox-data';
 process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
 process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
@@ -71,17 +71,12 @@ function createAgentBrain(cronHub: CronHub): AgentBrain {
     model,
     memory,
     skills,
-    sandbox: {
-      rules: [
-        { action: 'web_fetch', permission: 'ALLOW' },
-        { action: 'web_search', permission: 'ALLOW' },
-      ],
-    },
     cron: cronHub,
     config: {
       systemPrompt: 'You are a helpful AI assistant. Answer clearly and concisely.',
       maxSteps: 50,
       maxReplans: 5,
+      workingDirectory: process.env.SANDBOX_DIR,
     },
     eventPublisher: {
       publish(type: string, payload: unknown) {

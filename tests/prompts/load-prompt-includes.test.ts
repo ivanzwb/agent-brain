@@ -39,4 +39,14 @@ describe('load-prompt includes', () => {
   it('registers fragments category', () => {
     expect(listPromptCategories()).toContain('fragments');
   });
+
+  it('rejects empty include path', () => {
+    setPromptsRootForTesting(FIXTURES_DIR);
+    expect(() => loadPrompt('empty-include.md')).toThrow(/Empty include path/);
+  });
+
+  it('throws when prompt file is missing', () => {
+    setPromptsRootForTesting(FIXTURES_DIR);
+    expect(() => loadPrompt('does-not-exist.md')).toThrow(/Prompt file not found/);
+  });
 });

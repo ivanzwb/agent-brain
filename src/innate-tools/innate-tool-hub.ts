@@ -67,6 +67,12 @@ export class InnateToolHub implements IHub {
   hasTool(toolName: string): boolean {
     return this.registry.has(toolName);
   }
+
+  /** Full tool instance for ReAct metadata (sandbox exemption, post-execute hooks). */
+  getRegisteredTool(toolName: string): InnateTool | undefined {
+    return this.registry.get(toolName);
+  }
+  
   getToolsDescription(): string[] {
     return Array.from(this.registry.values()).map(t => `${t.definition.name}: ${t.definition.description}`);
   }

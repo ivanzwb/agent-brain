@@ -21,7 +21,10 @@ export interface ToolDefinition {
 export interface InnateTool {
   /** Tool definition (name, description, JSON Schema parameters) */
   readonly definition: ToolDefinition;
-  /** Sandbox action category. If undefined, tool is exempt from sandbox check. */
+  /**
+   * Sandbox action category. If undefined, the tool is exempt from the pre-execute sandbox
+   * check in the execute-phase ReAct loop (set a category for FS, command, web, etc.).
+   */
   readonly actionCategory?: ActionCategory;
   /** Arg name(s) to extract as permission target (checked in order). Defaults to '*'. */
   readonly permissionTargetArgs?: string[];

@@ -287,6 +287,8 @@ export class CmdBgTool implements InnateTool {
 
 export class CmdListTool implements InnateTool {
   readonly definition: ToolDefinition = CMD_TOOL_DEFINITIONS.cmd_list;
+  /** Same guardrail family as other command tools (process inspection). */
+  readonly actionCategory = 'cmd_exec' as const;
 
   async execute(_args: Record<string, unknown>): Promise<string> {
     const processes = Array.from(bgProcesses.values()).map(p => ({

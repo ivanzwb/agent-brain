@@ -3,7 +3,7 @@ import { MemoryHub } from './memory/memory-hub';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
 import { CronHub } from './cron/cron-hub';
 import { SkillHub } from './skill/skill-hub';
-import type { SandboxConfig } from './sandbox/security-sandbox';
+import type { SecuritySandbox } from './sandbox/security-sandbox';
 
 // ============================================================
 // Cognitive Phases - Five-stage human-like thinking process
@@ -251,6 +251,11 @@ export interface AgentConfig {
   maxConsecutiveFailures?: number;
   /** Maximum number of replans triggered by REFLECT */
   maxReplans?: number;
+  /**
+   * Built-in sandbox only: resolved working directory for tools (fs/cmd paths).
+   * Ignored when a custom `sandbox` is passed to `AgentBrain`. Omit for `os.tmpdir()/.bios-agent`.
+   */
+  workingDirectory?: string;
 }
 
 const CONFIG_DEFAULTS = {
@@ -259,10 +264,24 @@ const CONFIG_DEFAULTS = {
   maxReplans: 2,
 } as const;
 
+/** Appended to host `systemPrompt` once — documents innate cron_, skill_*, and ask_user expectations. */
+const INNATE_TOOLS_GUIDANCE_MARKER = '[AgentBrain: innate tools guidance]';
+const INNATE_TOOLS_SYSTEM_SUPPLEMENT = `## Built-in (innate) tools
+- **Scheduling**: Recurring or in-app scheduled work uses the **cron_** tools (e.g. \`cron_add\` with a standard cron expression in UTC). Prefer them over asking which external device or app to use when the request can be satisfied in the host application.
+- **ask_user**: Do not call \`ask_user\` to ask which phone, PC, or third-party app to use unless the user explicitly needs an integration outside the host. For reminders or schedules inside the host, use **cron_** tools directly without platform clarification.
+- **Skill registry**: If the user asks to find, search, or list skills from the online registry (e.g. "find UX skills", "有没有设计类 skill"), you **must** call \`skill_find\` with a short \`query\` (English keywords often work well), then answer from the tool JSON — do not invent package names or pretend you searched without calling \`skill_find\`.`;
+
 export function resolveConfig(
   config: AgentConfig,
-): Required<AgentConfig> {
-  return { ...CONFIG_DEFAULTS, ...config } as Required<AgentConfig>;
+): AgentConfig & typeof CONFIG_DEFAULTS {
+  const merged = { ...CONFIG_DEFAULTS, ...config } as AgentConfig & typeof CONFIG_DEFAULTS;
+  const base = merged.systemPrompt != null ? String(merged.systemPrompt) : '';
+  if (base.includes(INNATE_TOOLS_GUIDANCE_MARKER)) {
+    return merged;
+  }
+  const suffix = `${INNATE_TOOLS_GUIDANCE_MARKER}\n${INNATE_TOOLS_SYSTEM_SUPPLEMENT}`;
+  merged.systemPrompt = base ? `${base}\n\n${suffix}` : suffix;
+  return merged;
 }
 
 // ============================================================
@@ -331,9 +350,12 @@ export interface AgentBrainOptions {
   cron?: CronHub;
   /** Skill hub (unified management of dynamically installed skill packages) */
   skills: SkillHub;
-  /** Security sandbox configuration (optional). When provided, all tool
-   *  executions go through permission checks before running. */
-  sandbox?: SandboxConfig;
+  /**
+   * Custom security sandbox (e.g. DB + UI approval). Omit to use the built-in rule sandbox whose
+   * `askPermission` routes to `ask_user`. Subclass {@link SecuritySandbox} and override
+   * `checkPermission` / `prepareToolExecution` / `askPermission` as needed.
+   */
+  sandbox?: SecuritySandbox;
   config: AgentConfig;
   eventPublisher?: IEventPublisher;
 }

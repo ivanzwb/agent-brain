@@ -173,25 +173,42 @@ The framework provides a built-in `SecuritySandbox` that guards all tool executi
 
 Each innate tool self-declares its `actionCategory` (e.g., `fs_read`, `cmd_exec`, `web_fetch`) and `permissionTargetArgs`, enabling Open/Closed permission checks without hardcoded mappings. Skill tools default to the `skill_exec` category.
 
+Custom rules and working directory:
+
 ```typescript
+import { AgentBrain, SecuritySandbox } from '@biosbot/agent-brain';
+
+const ruleSandbox = new SecuritySandbox('./agent-workspace');
+ruleSandbox.addRules([
+  { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
+  { action: 'fs_delete', permission: 'DENY' },
+  { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
+]);
+
 const agent = new AgentBrain({
   model,
   skills,
   memory,
-  sandbox: {
-    workingDirectory: './agent-workspace',
-    defaultPermission: 'ASK',
-    rules: [
-      { action: 'fs_read', pattern: '/safe/dir/**', permission: 'ALLOW' },
-      { action: 'fs_delete', permission: 'DENY' },
-      { action: 'web_fetch', pattern: 'https://api.example.com/*', permission: 'ALLOW' },
-    ],
-  },
-  config: { systemPrompt: 'You are a helpful AI assistant.', modelContextSize: 128000 },
+  sandbox: ruleSandbox,
+  config: { systemPrompt: 'You are a helpful AI assistant.' },
 });
 ```
 
-Rules are matched last-to-first (later rules take higher priority). Patterns support glob (`*`, `**`) and regex (`/pattern/`).
+Built-in sandbox (omit `sandbox`) uses `config.workingDirectory` for paths and routes ASK to `ask_user`:
+
+```typescript
+new AgentBrain({
+  model,
+  skills,
+  memory,
+  config: {
+    systemPrompt: 'You are a helpful AI assistant.',
+    workingDirectory: './agent-workspace',
+  },
+});
+```
+
+`SecuritySandbox` matches rules last-to-first; patterns support glob (`*`, `**`) and regex (`/pattern/`). For custom policy, **subclass** `SecuritySandbox` and override `checkPermission`, `prepareToolExecution` (path + arg injection before tool run), and/or `askPermission` as needed.
 
 ## API Reference
 
@@ -244,9 +261,7 @@ interface TaskResult {
 | `heartbeatTimeoutMs` | 60000 | Heartbeat timeout threshold |
 | `maxConsecutiveFailures` | 3 | Max consecutive failures before termination |
 | `maxReplans` | 2 | Max replanning attempts in REFLECT phase |
-| `sandbox.workingDirectory` | `os.tmpdir()/.bios-agent` | Default working directory for all tools |
-| `sandbox.defaultPermission` | `ASK` | Default permission when no rule matches (`ALLOW`, `DENY`, `ASK`) |
-| `sandbox.rules` | `[]` | Initial permission rules (`{ action, pattern?, permission }`) |
+| `workingDirectory` | — (built-in sandbox: `os.tmpdir()/.bios-agent`) | Tool working directory when using AgentBrain’s built-in sandbox |
 
 ## Requirements
 

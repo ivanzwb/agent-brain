@@ -21,6 +21,23 @@ class MockModelClient implements IModelClient {
   }
 }
 
+/**
+ * Any non-empty substring counts as a large constant so the first ratio-based slice
+ * can still exceed maxTokens and trigger the shrink loop in trimText.
+ */
+class PlateauTokenModel implements IModelClient {
+  readonly contextWindow = 100_000;
+  count(text: string): number {
+    return text.length > 0 ? 800 : 0;
+  }
+  countTools(tools: ToolDefinition[]): number {
+    return this.count(JSON.stringify(tools));
+  }
+  async chat(): Promise<never> {
+    throw new Error('PlateauTokenModel.chat should not be called');
+  }
+}
+
 describe('PromptBudget', () => {
   let model: MockModelClient;
   let budget: PromptBudget;
@@ -105,6 +122,15 @@ describe('PromptBudget', () => {
       const text = 'a'.repeat(100);
       const result = budget.trimText(text, 10);
       expect(result).toContain('[... truncated due to token budget]');
+    });
+
+    it('shrinks in steps when first slice still exceeds maxTokens', () => {
+      const plateau = new PlateauTokenModel();
+      const b = new PromptBudget(plateau);
+      const text = 'a'.repeat(80);
+      const result = b.trimText(text, 100);
+      expect(result).toContain('[... truncated due to token budget]');
+      expect(result.length).toBeLessThan(text.length);
     });
   });
 

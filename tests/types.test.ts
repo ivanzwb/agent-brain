@@ -73,12 +73,42 @@ describe('types', () => {
       expect(config.maxReplans).toBe(3);
     });
 
-    it('should return Required<AgentConfig>', () => {
+    it('should append innate tools guidance to systemPrompt once', () => {
       const config = resolveConfig({
         systemPrompt: 'test',
       });
 
-      expect(config.systemPrompt).toBe('test');
+      expect(config.systemPrompt).toContain('test');
+      expect(config.systemPrompt).toContain('[AgentBrain: innate tools guidance]');
+      expect(config.systemPrompt).toContain('skill_find');
+    });
+
+    it('should not duplicate innate tools guidance when marker is already present', () => {
+      const withMarker = `test\n\n[AgentBrain: innate tools guidance]\nexisting`;
+      const config = resolveConfig({
+        systemPrompt: withMarker,
+      });
+
+      expect(config.systemPrompt).toBe(withMarker);
+    });
+
+    it('should pass through workingDirectory when set', () => {
+      const config = resolveConfig({
+        systemPrompt: 'test',
+        workingDirectory: '/tmp/ws',
+      });
+      expect(config.workingDirectory).toBe('/tmp/ws');
+    });
+
+    it('should leave workingDirectory unset when omitted', () => {
+      const config = resolveConfig({ systemPrompt: 'test' });
+      expect(config.workingDirectory).toBeUndefined();
+    });
+
+    it('should use guidance-only systemPrompt when systemPrompt is empty', () => {
+      const config = resolveConfig({ systemPrompt: '' });
+      expect(config.systemPrompt).toContain('[AgentBrain: innate tools guidance]');
+      expect(config.systemPrompt.startsWith('\n\n')).toBe(false);
     });
   });
 });

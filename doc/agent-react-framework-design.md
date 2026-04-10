@@ -1088,18 +1088,16 @@ interface IEventPublisher {
   publish(type: string, payload: unknown): void;
 }
 
-/** Security sandbox — permission-based execution guard */
-interface SecuritySandbox {
-  /** Check permission for a tool action. May prompt user via AskHandler. */
+/** Security sandbox — permission-based execution guard (subclass for custom policy) */
+class SecuritySandbox {
   checkPermission(request: PermissionRequest): Promise<PermissionDecision>;
-  /** Resolve a relative path against the sandbox working directory. */
-  resolvePath(filePath: string): string;
-  /** The sandbox working directory (used as default cwd for cmd tools). */
-  readonly workingDirectory: string;
-  /** Rule management */
-  addRule(rule: PermissionRule): void;
-  removeRules(action: ActionCategory, pattern?: string): number;
-  getRules(): PermissionRule[];
+  prepareToolExecution(
+    action: ActionCategory,
+    toolName: string,
+    permissionTarget: string,
+    args: Record<string, unknown>,
+  ): Promise<string | undefined>;
+  askPermission(request: PermissionRequest): Promise<boolean>;
 }
 ```
 
@@ -1115,8 +1113,8 @@ interface AgentBrainOptions {
   /** Skill center */
   skills: SkillHub;
   config: AgentConfig;
-  /** Security sandbox configuration */
-  sandbox?: SandboxConfig;
+  /** Custom sandbox (subclass of `SecuritySandbox`); omit to use built-in */
+  sandbox?: SecuritySandbox;
   eventPublisher?: IEventPublisher;
 }
 ```
@@ -1131,14 +1129,9 @@ interface AgentBrainOptions {
 | heartbeatTimeoutMs | 60,000 | Heartbeat timeout threshold |
 | maxConsecutiveFailures | 3 | Maximum consecutive failure count |
 | maxReplans | 2 | Maximum replan count triggered by REFLECT |
+| workingDirectory | — (built-in default under OS temp) | Built-in sandbox only: tool working directory; set on `AgentConfig` |
 
-#### SandboxConfig
-
-| Config | Default | Description |
-|--------|---------|-------------|
-| workingDirectory | `os.tmpdir()/.bios-agent` | Default working directory for all tools; relative paths resolve against this |
-| defaultPermission | `ASK` | Default permission level when no rule matches (`ALLOW`, `DENY`, or `ASK`) |
-| rules | `[]` | Initial permission rules applied at construction time |
+When `sandbox` is omitted, AgentBrain uses a built-in rule sandbox subclass whose `askPermission` routes to `ask_user`. The class `SecuritySandbox` starts with no rules; when no rule matches, permission is always **ASK**. Rules come from subclasses/wrappers or `addRule` after construction. Direct use: `new SecuritySandbox(workingDirectory?)` (override `askPermission` for custom ASK).
 
 ### 9.4 Pluggable Components
 
@@ -1149,7 +1142,7 @@ interface AgentBrainOptions {
 | Context Assembly Strategy | Strategy pattern | Replace priority ordering and compression algorithms |
 | Termination Condition | Condition chain | Add custom termination conditions |
 | Observation Result Formatter | Formatter | Define specialized result formatting for different tool types |
-| Security Sandbox | Constructor config | Customize permission rules, working directory, and ASK handler |
+| Security Sandbox | Subclass `SecuritySandbox` or built-in | Override `checkPermission`, `prepareToolExecution`, `askPermission` as needed; base class exposes `workingDirectory` (ASK → `ask_user` when using built-in wiring) |
 
 ---
 

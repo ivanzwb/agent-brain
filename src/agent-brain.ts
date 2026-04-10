@@ -4,7 +4,6 @@ import {
   TerminationReason,
   resolveConfig,
   type AgentBrainOptions,
-  type AgentConfig,
   type Assessment,
   type ExecuteResult,
   type IEventPublisher,
@@ -22,67 +21,10 @@ import { TokenTracker } from './token/token-tracker';
 import { PromptBudget } from './token/prompt-budget';
 import { SkillHub } from './skill/skill-hub';
 import { InnateToolHub } from './innate-tools/innate-tool-hub';
+import { registerDefaultInnateTools } from './innate-tools/register-default-innate-tools';
 import { MemoryHub } from './memory/memory-hub';
-import { AskUserTool } from './innate-tools/ask-user-tool';
-import {
-  SkillFindTool,
-  SkillListTool,
-  SkillInstallTool,
-  SkillLoadMainTool,
-  SkillLoadReferenceTool,
-  SkillListToolsTool,
-} from './skill/skill-tools';
-import {
-  MemorySearchTool,
-  MemorySaveTool,
-  MemoryHistoryTool,
-  MemoryDeleteTool,
-  ConversationTrackTool,
-  ConversationSearchTool,
-  ConversationHistoryTool,
-} from './memory/memory-tools';
-import {
-  KnowledgeListTool,
-  KnowledgeAddTool,
-  KnowledgeDeleteTool,
-  KnowledgeSearchTool,
-} from './knowledge/knowledge-tools';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
-import {
-  FSReadTool,
-  FSWriteTool,
-  FSEditTool,
-  FSDeleteTool,
-  FSListTool,
-  FSMkdirTool,
-  FSExistsTool,
-  FSStatTool,
-  FSSearchTool,
-  FSGrepTool,
-} from './innate-tools/file-system-tool';
-import {
-  CmdExecTool,
-  CmdRunTool,
-  CmdKillTool,
-  CmdBgTool,
-  CmdListTool,
-} from './innate-tools/command-tool';
-import {
-  HttpGetTool,
-  HttpPostTool,
-  HttpFetchHtmlTool,
-  WebSearchTool,
-  WebScrapeTool,
-} from './innate-tools/web-tool';
-import {
-  CronListTool,
-  CronAddTool,
-  CronDeleteTool,
-  CronPauseTool,
-  CronResumeTool,
-  CronRunNowTool,
-} from './cron/cron-tools';
-import { SecuritySandbox } from './sandbox/security-sandbox';
+import { SecuritySandbox, type PermissionRequest } from './sandbox/security-sandbox';
 import { FastPathStrategy } from './strategy/fast-path-strategy';
 import { FullCycleStrategy } from './strategy/full-cycle-strategy';
 import type { ExecutionStrategy, CognitiveOps } from './strategy/types';
@@ -91,6 +33,24 @@ function generateTaskId(): string {
   const ts = Date.now().toString(36);
   const rand = Math.random().toString(36).slice(2, 10);
   return `task_${ts}_${rand}`;
+}
+
+/** Default rule sandbox with ASK routed through {@link InnateToolHub.requestUserInput}. */
+class InnateAskSecuritySandbox extends SecuritySandbox {
+  constructor(workingDirectory: string | undefined, private readonly innateToolHub: InnateToolHub) {
+    super(workingDirectory);
+  }
+
+  override async askPermission(request: PermissionRequest): Promise<boolean> {
+    const question =
+      `[Security Sandbox] Permission required:\n` +
+      `  Action: ${request.action}\n` +
+      `  Target: ${request.target}\n` +
+      (request.detail ? `  Detail: ${request.detail}\n` : '') +
+      `\nAllow this action? (yes/no)`;
+    const answer = await this.innateToolHub.requestUserInput(question);
+    return /^(y|yes|allow|ok|确认|允许|是)$/i.test(answer.trim());
+  }
 }
 
 // ============================================================
@@ -109,7 +69,7 @@ export class AgentBrain {
 
   private readonly innateToolHub: InnateToolHub;
   private readonly skillHub: SkillHub;
-  private readonly config: Required<AgentConfig>;
+  private readonly config: ReturnType<typeof resolveConfig>;
   private readonly eventPublisher?: IEventPublisher;
   private readonly scheduler = new ThinkingModeScheduler();
   private readonly budget: PromptBudget;
@@ -121,83 +81,20 @@ export class AgentBrain {
 
     this.innateToolHub = new InnateToolHub();
 
-    // Security sandbox
-    this.sandbox = new SecuritySandbox(opts.sandbox);
-    // Wire ASK handler through the innate tool hub's ask_user mechanism
-    this.sandbox.setAskHandler(async (request) => {
-      const question =
-        `[Security Sandbox] Permission required:\n` +
-        `  Action: ${request.action}\n` +
-        `  Target: ${request.target}\n` +
-        (request.detail ? `  Detail: ${request.detail}\n` : '') +
-        `\nAllow this action? (yes/no)`;
-      const answer = await this.innateToolHub.requestUserInput(question);
-      return /^(y|yes|allow|ok|确认|允许|是)$/i.test(answer.trim());
-    });
+    // Security sandbox: host subclass of SecuritySandbox or built-in rule sandbox + ask_user ASK
+    this.sandbox = opts.sandbox
+      ? opts.sandbox
+      : new InnateAskSecuritySandbox(this.config.workingDirectory, this.innateToolHub);
 
     this.memory = opts.memory;
-    this.innateToolHub.register(new ConversationTrackTool(this.memory));
-    this.innateToolHub.register(new ConversationSearchTool(this.memory));
-    this.innateToolHub.register(new ConversationHistoryTool(this.memory));
-    this.innateToolHub.register(new MemorySearchTool(this.memory));
-    this.innateToolHub.register(new MemorySaveTool(this.memory));
-    this.innateToolHub.register(new MemoryHistoryTool(this.memory));
-    this.innateToolHub.register(new MemoryDeleteTool(this.memory));
-
     this.knowledge = opts.knowledge;
-    if(this.knowledge) {
-      this.innateToolHub.register(new KnowledgeListTool(this.knowledge));
-      this.innateToolHub.register(new KnowledgeAddTool(this.knowledge));
-      this.innateToolHub.register(new KnowledgeDeleteTool(this.knowledge));
-      this.innateToolHub.register(new KnowledgeSearchTool(this.knowledge));
-    }
-
     this.skillHub = opts.skills;
-    this.innateToolHub.register(new SkillFindTool(this.skillHub));
-    this.innateToolHub.register(new SkillListTool(this.skillHub));
-    this.innateToolHub.register(new SkillInstallTool(this.skillHub));
-    this.innateToolHub.register(new SkillLoadMainTool(this.skillHub));
-    this.innateToolHub.register(new SkillLoadReferenceTool(this.skillHub));
-    this.innateToolHub.register(new SkillListToolsTool(this.skillHub));
-
-    this.innateToolHub.register(new AskUserTool(this.innateToolHub));
-
-    // File system tools
-    this.innateToolHub.register(new FSReadTool());
-    this.innateToolHub.register(new FSWriteTool());
-    this.innateToolHub.register(new FSEditTool());
-    this.innateToolHub.register(new FSDeleteTool());
-    this.innateToolHub.register(new FSListTool());
-    this.innateToolHub.register(new FSMkdirTool());
-    this.innateToolHub.register(new FSExistsTool());
-    this.innateToolHub.register(new FSStatTool());
-    this.innateToolHub.register(new FSSearchTool());
-    this.innateToolHub.register(new FSGrepTool());
-
-    // Command execution tools
-    this.innateToolHub.register(new CmdExecTool());
-    this.innateToolHub.register(new CmdRunTool());
-    this.innateToolHub.register(new CmdKillTool());
-    this.innateToolHub.register(new CmdBgTool());
-    this.innateToolHub.register(new CmdListTool());
-
-    // Network tools
-    this.innateToolHub.register(new HttpGetTool());
-    this.innateToolHub.register(new HttpPostTool());
-    this.innateToolHub.register(new HttpFetchHtmlTool());
-    this.innateToolHub.register(new WebSearchTool());
-    this.innateToolHub.register(new WebScrapeTool());
-
-    // Scheduled task tools
-    const cronHub = opts.cron;
-    if (cronHub) {
-      this.innateToolHub.register(new CronListTool(cronHub));
-      this.innateToolHub.register(new CronAddTool(cronHub));
-      this.innateToolHub.register(new CronDeleteTool(cronHub));
-      this.innateToolHub.register(new CronPauseTool(cronHub));
-      this.innateToolHub.register(new CronResumeTool(cronHub));
-      this.innateToolHub.register(new CronRunNowTool(cronHub));
-    }
+    registerDefaultInnateTools(this.innateToolHub, {
+      memory: this.memory,
+      skills: this.skillHub,
+      knowledge: this.knowledge,
+      cron: opts.cron,
+    });
 
     this.eventPublisher = opts.eventPublisher;
     if (this.eventPublisher) {

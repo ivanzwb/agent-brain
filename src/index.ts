@@ -6,15 +6,9 @@
 export { AgentBrain } from './agent-brain';
 
 // --- Sub-modules (advanced usage) ---
-export { ReactLoop } from './react/react-loop';
-export type { ReactLoopDeps, ReactLoopContext } from './react/react-loop';
-export { LoopController } from './react/loop-controller';
 export { SkillHub } from './skill/skill-hub';
 export { OpenAIClient } from './model/openai-client';
 export type { OpenAIClientOptions } from './model/openai-client';
-export { AskUserTool } from './innate-tools/ask-user-tool';
-export { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge/knowledge-tool-definitions';
-export { MEMORY_TOOL_DEFINITIONS, CONVERSATION_TOOL_DEFINITIONS } from './memory/memory-tool-definitions';
 export { MemoryHub } from './memory/memory-hub';
 export { KnowledgeHub } from './knowledge/knowledge-hub';
 export type { CronHub } from './cron/cron-hub';
@@ -23,10 +17,8 @@ export type {
   PermissionLevel,
   ActionCategory,
   PermissionRule,
-  SandboxConfig,
   PermissionRequest,
   PermissionDecision,
-  AskHandler,
 } from './sandbox/security-sandbox';
 
 // --- Prompt templates (keyword registry + compose) ---

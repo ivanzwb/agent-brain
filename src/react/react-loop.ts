@@ -21,7 +21,7 @@ import { PromptBudget } from '../token/prompt-budget';
 import { MemoryHub } from '../memory/memory-hub';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { SkillHub } from '../skill/skill-hub';
-import type { SecuritySandbox, ActionCategory } from '../sandbox/security-sandbox';
+import type { ActionCategory, SecuritySandbox } from '../sandbox/security-sandbox';
 import { renderPrompt } from '../prompts/prompt-system';
 import { buildPlanStepSystemPrompt } from './plan-step-prompt';
 
@@ -234,16 +234,13 @@ export class ReactLoop {
       eventPublisher?.publish('step:action', { step: controller.currentStep, tool: call.name, args: call.arguments });
 
       // ---- OBSERVATION ----
-      // Sandbox permission check before any tool execution
+      // Sandbox: innate tools omit check when they declare no actionCategory (see InnateTool).
       let observation: string;
-      const isDefaultAllowToolCall = call.name === 'ask_user'
-      || call.name.startsWith('conversation_')
-      || call.name.startsWith('memory_')
-      || call.name.startsWith('knowledge_')
-      || call.name.startsWith('skill_')
-      || call.name.startsWith('cron_');
+      const innateTool = this.innateToolHub.getRegisteredTool(call.name);
+      const skipSandbox =
+        innateTool != null && innateTool.actionCategory === undefined;
 
-      if (this.sandbox && !isDefaultAllowToolCall) {
+      if (this.sandbox && !skipSandbox) {
         const sandboxResult = await this.checkSandboxPermission(call.name, call.arguments);
         if (sandboxResult) {
           observation = sandboxResult;
@@ -255,12 +252,23 @@ export class ReactLoop {
       }
 
       // Innate tools first, fall back to skill tools if not found
-      if (this.innateToolHub.hasTool(call.name)) {
+      if (innateTool) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
+          if (this.memory && call.name === 'ask_user') {
+            const q = call.arguments['question'];
+            const userResponse =
+              (typeof q === 'string' ? q : '(tool)') + ' -> ' + observation;
+            await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
+          }
           if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
-            const skillName: string = call.arguments['skillName'] as string;
-            skillTools = this.skillHub.getTools(skillName);
+            const loaded =
+              (typeof call.arguments['skillName'] === 'string' && call.arguments['skillName']) ||
+              (typeof call.arguments['name'] === 'string' && call.arguments['name']) ||
+              '';
+            if (loaded) {
+              skillTools = this.skillHub.getTools(loaded);
+            }
           }
         } catch (err) {
           controller.recordFailure();
@@ -268,8 +276,17 @@ export class ReactLoop {
         }
       } else {
         try {
-          const skillName: string = call.arguments['skillName'] as string;
-          observation = await this.skillHub.execute(skillName, call.name, call.arguments);
+          const { skillName, toolName } = this.resolveSkillToolCall(call.name, call.arguments);
+          if (!skillName) {
+            observation = JSON.stringify({
+              error: 'Missing skill name for skill tool execution',
+              toolCallName: call.name,
+              hint:
+                'Tool names from agent-skills use skill.<skillName>.<toolName>; skill name is parsed from the name when not passed in arguments.',
+            });
+          } else {
+            observation = await this.skillHub.execute(skillName, toolName, call.arguments);
+          }
         } catch (err) {
           controller.recordFailure();
           observation = `[Error] Tool execution failed: ${String(err)}`;
@@ -291,6 +308,31 @@ export class ReactLoop {
   // ----- private helpers -----
 
   /**
+   * Resolve skill package name and manifest tool name for skill business tools.
+   * The agent-skills package (and the Agent Skills spec) namespaces tools as skill.<skillName>.<toolName>.
+   * The last path segment after the first dot is the manifest tool name; the prefix (after skill.) is the skill package name (may contain dots).
+   */
+  private resolveSkillToolCall(
+    toolCallName: string,
+    args: Record<string, unknown>,
+  ): { skillName: string | undefined; toolName: string } {
+    let skillName =
+      typeof args['skillName'] === 'string' ? (args['skillName'] as string) : undefined;
+    let toolName = toolCallName;
+    if (typeof toolName === 'string' && toolName.startsWith('skill.')) {
+      const rest = toolName.slice('skill.'.length);
+      const lastDot = rest.lastIndexOf('.');
+      if (lastDot > 0) {
+        if (skillName == null || skillName === '') {
+          skillName = rest.slice(0, lastDot);
+        }
+        toolName = rest.slice(lastDot + 1);
+      }
+    }
+    return { skillName, toolName };
+  }
+
+  /**
    * Check sandbox permission for a tool call.
    * Returns a denial JSON string if blocked, or undefined if allowed.
    */
@@ -300,41 +342,12 @@ export class ReactLoop {
   ): Promise<string | undefined> {
     if (!this.sandbox) return undefined;
 
-    // Determine action category from the tool's self-declared metadata
     const action: ActionCategory = this.innateToolHub.getActionCategory(toolName) ?? 'skill_exec';
-    const target = this.innateToolHub.hasTool(toolName)
+    const permissionTarget = this.innateToolHub.hasTool(toolName)
       ? this.innateToolHub.getPermissionTarget(toolName, args)
       : `${(args['skillName'] as string) ?? ''}:${toolName}`;
 
-    // Resolve relative paths for fs tools
-    const resolvedTarget = action.startsWith('fs_')
-      ? this.sandbox.resolvePath(target)
-      : target;
-
-    const decision = await this.sandbox.checkPermission({
-      action,
-      target: resolvedTarget,
-      detail: `${toolName}: ${target}`,
-    });
-
-    if (!decision.allowed) {
-      return JSON.stringify({ status: 'denied', tool: toolName, target, reason: decision.reason });
-    }
-
-    // Inject sandbox working directory as default cwd for command tools
-    if (action.startsWith('cmd_') && !args['cwd']) {
-      args['cwd'] = this.sandbox.workingDirectory;
-    }
-
-    // Resolve fs paths so tools receive absolute paths
-    if (action.startsWith('fs_') && args['path']) {
-      args['path'] = resolvedTarget;
-    }
-    if (action.startsWith('fs_') && args['directory']) {
-      args['directory'] = this.sandbox.resolvePath(args['directory'] as string);
-    }
-
-    return undefined;
+    return this.sandbox.prepareToolExecution(action, toolName, permissionTarget, args);
   }
 
   /**
@@ -441,6 +454,28 @@ export class ReactLoop {
     };
   }
 
+  /**
+   * When a plan step ends without a tool-less final response (e.g. max steps), `output` is unset
+   * but the last THOUGHT/OBSERVATION still holds the model-visible answer — use it as finalAnswer.
+   */
+  private inferFinalAnswerFromSteps(steps: StepLog[]): string | undefined {
+    for (let i = steps.length - 1; i >= 0; i--) {
+      const s = steps[i];
+      if (s.phase === StepPhase.THOUGHT) {
+        const c = String(s.content ?? '').trim();
+        if (c && !c.startsWith('[Model Error]')) return s.content;
+      }
+    }
+    for (let i = steps.length - 1; i >= 0; i--) {
+      const s = steps[i];
+      if (s.phase === StepPhase.OBSERVATION) {
+        const c = String(s.content ?? '').trim();
+        if (c) return s.content;
+      }
+    }
+    return undefined;
+  }
+
   private buildResult(
     steps: StepLog[],
     planStepResults: PlanStepResult[],
@@ -454,6 +489,11 @@ export class ReactLoop {
           ? TaskStatus.TERMINATED
           : TaskStatus.FAILED;
 
-    return { status, finalAnswer, steps, planStepResults, terminationReason: reason };
+    let resolved = finalAnswer;
+    if (typeof resolved !== 'string' || !resolved.trim()) {
+      resolved = this.inferFinalAnswerFromSteps(steps);
+    }
+
+    return { status, finalAnswer: resolved, steps, planStepResults, terminationReason: reason };
   }
 }
