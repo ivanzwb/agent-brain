@@ -32,6 +32,9 @@ export async function runDeliberateStrategy(params: StrategyParams, ops: Cogniti
     reflection = await ops.reflect(userContext, perception, plan, executeResult, tracker);
     ops.emit('phase:reflect', { taskId, reflection });
 
+    // Save reflection to long-term memory as宝贵的经验
+    await ops.saveReflection(reflection, taskId);
+
     if (!reflection.needsReplan) break;
 
     replanCount++;

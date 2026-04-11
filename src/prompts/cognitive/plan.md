@@ -9,5 +9,6 @@ Your goal: Create a concrete execution plan.
 - Simple tasks may need just 1-2 steps; don't over-plan
 {{include:fragments/skill-tools.md}}
 
-Respond in JSON format ONLY. Do not include any other text.
-{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}
+**important**
+- Respond in JSON format ONLY. Do not include any other text.
+- Response format example: {"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}

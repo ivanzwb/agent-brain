@@ -17,5 +17,6 @@ Replan decision:
 - If the result is clearly inadequate, should we revise the plan and retry?
 - Only suggest replan if there's a realistic chance of improvement with a different approach
 
-Respond in JSON format ONLY. Do not include any other text.
-{"goalMet":true,"strengths":[],"improvements":[],"lessonsLearned":[],"needsReplan":false}
+**Important**
+- Respond in JSON format ONLY. Do not include any other text.
+- Response format example: {"goalMet":true,"strengths":[],"improvements":[],"lessonsLearned":[],"needsReplan":false}

@@ -240,6 +240,7 @@ export class AgentBrain {
       plan: this.plan.bind(this),
       execute: this.execute.bind(this),
       reflect: this.reflect.bind(this),
+      saveReflection: this.saveReflection.bind(this),
       emit: this.emit.bind(this),
       trackConversation: (id, role, content) => this.memory.conversation_track(id, role, content),
       buildResult: this.buildTaskResult.bind(this),
@@ -457,6 +458,22 @@ export class AgentBrain {
     const response = await this.model.chat(messages);
     tracker.trackCompletion(response.content);
     return this.parseJson<Reflection>(response.content, this.emptyReflection());
+  }
+
+  // ===========================================================
+  // Reflection Storage — Save to long-term memory
+  // ===========================================================
+
+  private async saveReflection(reflection: Reflection, taskId: string): Promise<void> {
+    const key = `reflection:${taskId}`;
+    const value = JSON.stringify({
+      goalMet: reflection.goalMet,
+      strengths: reflection.strengths,
+      improvements: reflection.improvements,
+      lessonsLearned: reflection.lessonsLearned,
+      timestamp: new Date().toISOString(),
+    });
+    await this.memory.memory_save(key, value);
   }
 
   // ===========================================================

@@ -33,6 +33,8 @@ export interface CognitiveOps {
   plan(userInput: string, perception: Perception, assessment: Assessment, tracker: TokenTracker, previousReflection?: Reflection, userContext?: string): Promise<Plan>;
   execute(conversationId: string, assessment: Assessment, plan: Plan, tracker: TokenTracker, userContext?: string): Promise<ExecuteResult>;
   reflect(userInput: string, perception: Perception, plan: Plan, executeResult: ExecuteResult, tracker: TokenTracker): Promise<Reflection>;
+  /** Save reflection to long-term memory */
+  saveReflection(reflection: Reflection, taskId: string): Promise<void>;
   emit(type: string, payload: unknown): void;
   trackConversation(id: string, role: string, content: string): Promise<void>;
   buildResult(taskId: string, startTime: number, tracker: TokenTracker, partial: Omit<TaskResult, 'taskId' | 'durationMs' | 'tokenUsage'>): TaskResult;
