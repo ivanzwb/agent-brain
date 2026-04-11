@@ -73,36 +73,50 @@
 
 ### 2.1 总览
 
-框架对每个任务都执行**五阶段认知循环**。第一阶段 PERCEIVE 在理解任务的同时对复杂度进行分类，从而在后续阶段运行前选择合适的**执行策略**：
+框架对每个任务都执行**五阶段认知循环**。第一阶段 PERCEIVE 会分析任务复杂度和推荐思考方式，从而选择合适的**执行策略**：
 
 ```
 任务输入
   │
   ▼
 ┌──────────────────────────────────────────────────────┐
-│  Phase 1: PERCEIVE — 理解任务 & 分类复杂度         │
-│  识别意图、澄清模糊点、定义成功标准，               │
-│  同时判断复杂度（simple / complex）              │
-│  简单任务：同时产出可直接执行的单步计划（fastPlan） │
-├─────────────┬────────────────────────────────────────┘
-│             │                                         |
-│   简单      │   复杂                                   |
-│      │      │      │                                  |
-│      ▼      │      ▼                                 |
-│  FastPath   │  FullCycle                             |
-│  Strategy   │  Strategy                             |
-│  EXECUTE    │  ASSESS → PLAN → EXECUTE → REFLECT     |
-│      │      │      │                                |
-│      ▼      │      ▼                                 |
-│   结果      │   结果                                  │
-└─────────────┴────────────────────────────────────────┘
+│  Phase 1: PERCEIVE — 理解任务 & 分类复杂度     │
+│  识别意图、澄清模糊点、定义成功标准            │
+│  分析复杂度 & 推荐思考方式                │
+│  简单任务：产出 fastPlan                  │
+├─────────────┬───────────────────────────────┐
+│    简单   │   中等     │   复杂            │
+│     │     │     │      │     │             │
+│     ▼     │     ▼      │     ▼          │
+│  INSTINCT │ ANALYTICAL │ DELIBERATE      │
+│  (模式    │ (按步骤   │ (深度思考)    │
+│   匹配)  │   推理)  │   +重规划)   │
+└─────────────┴───────────────────────────────┘
 ```
 
-**快速通道**（简单任务）：PERCEIVE 产出单步计划（`fastPlan`），`FastPathStrategy` 跳过 ASSESS/PLAN/REFLECT，直接进入 EXECUTE。将 LLM 调用从 5+ 次降低到 2 次。
+### ThinkingLevel（类人 SYSTEM 1/2 思考）
 
-**完整循环**（复杂任务）：`FullCycleStrategy` 按 ASSESS → PLAN → EXECUTE → REFLECT 完整执行。
+框架模拟人类思考模式，通过 `ThinkingLevel` 定义：
 
-两种策略均实现 `ExecutionStrategy` 接口，新增执行路径（如 `MediumPathStrategy`）无需修改 `AgentBrain`。
+| 层级 | 策略 | 描述 |
+|------|------|------|
+| **INSTINCT** | InstinctStrategy | 模式匹配，"我一眼就知道" - 快，自动。跳过 ASSESS/PLAN，直接用 fastPlan 执行。 |
+| **ANALYTICAL** | AnalyticalStrategy | 按步骤推理，验证 - 受控，有条理。ASSESS → PLAN → EXECUTE。 |
+| **DELIBERATE** | DelibrateStrategy | 深度推理，探索多种方案 - 广泛思考。完整循环+重规划。 |
+
+### ExecutionMode
+
+用户可通过 `AgentBrain.run(input, { mode })` 选择执行模式：
+
+| 模式 | 策略 | 阶段 |
+|------|------|------|
+| `think` | THINK | PERCEIVE + ASSESS |
+| `plan` | PLAN | PERCEIVE + ASSESS + PLAN |
+| `execute` | INSTINCT 或 ANALYTICAL | 根据任务决定（有 fastPlan → INSTINCT，否则 ANALYTICAL） |
+| `full` | DELIBERATE | 完整执行 + REFLECT |
+| `auto` | 自动选择 | 基于 PERCEIVE 复杂度 |
+
+所有策略实现 `ExecutionStrategy` 接口，新增执行路径无需修改 `AgentBrain`。
 
 ```
 任务输入
@@ -155,11 +169,11 @@
 - **澄清模糊点**：识别任务描述中的歧义
   - 有歧义时，标注出来（后续可主动提问或做合理假设）
 - **定义成功标准**：明确什么样的结果才算"完成"
-- **分类复杂度**：判断任务是 `simple` 还是 `complex`
-  - 简单：单一操作、明确映射到 1-2 个工具调用
-  - 复杂：多步骤、有依赖、需要分析/综合、方法不明确
-  - 拿不准时分类为 `complex`
-- **生成快速计划**（仅简单任务）：产出单步 `fastPlan`，使 ExecutionStrategy 可跳过 ASSESS/PLAN/REFLECT
+- **分类复杂度**：分析任务复杂度（`simple` / `moderate` / `complex`）和推荐 `ThinkingLevel`
+  - 简单 + 可模式匹配：INSTINCT（用 fastPlan）
+  - 中等：ANALYTICAL（按步骤推理）
+  - 复杂：DELIBERATE（深度思考+重规划）
+- **生成快速计划**（简单任务）：产出 `fastPlan` 供 INSTINCT 策略使用
 
 **产出结构** — `Perception`：
 
@@ -1099,7 +1113,7 @@ interface AgentBrainOptions {
 
 | 组件 | 扩展方式 | 说明 |
 |------|---------|------|
-| 执行策略 | 策略模式 | 实现 `ExecutionStrategy` 接口定义新执行路径（如 `FastPathStrategy`、`FullCycleStrategy`） |
+| 执行策略 | 策略模式 | 实现 `ExecutionStrategy` 接口定义新路径（如 `runInstinctStrategy`、`runAnalyticalStrategy`、`runDeliberateStrategy`） |
 | 思维模式调度器 | 替换调度策略 | 可自定义每个认知阶段的思维模式权重配比 |
 | 上下文组装策略 | 策略模式 | 可替换优先级排序与压缩算法 |
 | 终止条件判定 | 条件链 | 可添加自定义终止条件 |

@@ -15,7 +15,8 @@ English | [中文](./README.zh-CN.md)
 | Feature | Description |
 |---------|-------------|
 | **Five-phase Cognitive Cycle** | PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT |
-| **Adaptive Fast Path** | PERCEIVE classifies complexity; simple tasks skip to EXECUTE via Strategy pattern (2 LLM calls) |
+| **ThinkingLevel** | INSTINCT (pattern match) / ANALYTICAL (step-by-step) / DELIBERATE (deep thinking) via Strategy pattern |
+| **ExecutionMode** | `think` / `plan` / `execute` / `full` / `auto` modes |
 | **Nested ReAct** | Outer task planning + inner per-step execution loops |
 | **Dynamic Skill Acquisition** | Auto-search and install skills during execution |
 | **Interactive User Input** | Pause and wait for user input via `ask_user` tool |
@@ -34,9 +35,20 @@ This framework models an agent's task processing as a **five-phase cognitive cyc
 PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 ```
 
-The PERCEIVE phase simultaneously classifies task complexity, selecting an **execution strategy**:
-- **Simple tasks** (e.g., "find stock-related skills"): `FastPathStrategy` skips to EXECUTE directly (2 LLM calls)
-- **Complex tasks** (e.g., "analyze server performance and generate report"): `FullCycleStrategy` runs the full ASSESS → PLAN → EXECUTE → REFLECT cycle
+The PERCEIVE phase classifies **task complexity** and **recommended ThinkingLevel**, selecting an **execution strategy**:
+
+| Complexity | ThinkingLevel | Strategy | Phases |
+|------------|--------------|----------|--------|
+| Simple + pattern recognizable | INSTINCT | `runInstinctStrategy` | fastPlan → EXECUTE |
+| Moderate | ANALYTICAL | `runAnalyticalStrategy` | ASSESS → PLAN → EXECUTE |
+| Complex | DELIBERATE | `runDeliberateStrategy` | Full cycle + REFLECT (with replan) |
+
+**Execution modes** (`AgentBrain.run(input, { mode })`):
+- `think`: PERCEIVE + ASSESS
+- `plan`: PERCEIVE + ASSESS + PLAN
+- `execute`: INSTINCT or ANALYTICAL
+- `full`: DELIBERATE
+- `auto`: auto-select based on complexity
 
 ### Dual ReAct Architecture
 

@@ -54,6 +54,47 @@ export enum TaskStatus {
   TERMINATED = 'TERMINATED',
 }
 
+export enum ExecutionMode {
+  /** Auto mode: complexity is determined by PERCEIVE phase (default) */
+  AUTO = 'auto',
+  /** Think only: PERCEIVE + ASSESS (no execution) */
+  THINK = 'think',
+  /** Plan only: PERCEIVE + ASSESS + PLAN (no execution) */
+  PLAN = 'plan',
+  /** Execute: PERCEIVE + ASSESS + PLAN + EXECUTE (no REFLECT) */
+  EXECUTE = 'execute',
+  /** Full: PERCEIVE + ASSESS + PLAN + EXECUTE + REFLECT */
+  FULL = 'full',
+}
+
+/** Thinking level - like human System 1/2 thinking, maps to execution strategies */
+export enum ThinkingLevel {
+  /** INSTINCT: Pattern matching, experience recall, "I know this" - fast, automatic */
+  INSTINCT = 'instinct',
+  /** ANALYTICAL: Step-by-step reasoning, verification - controlled, methodical */
+  ANALYTICAL = 'analytical',
+  /** DELIBERATE: Deep reasoning, exploration, multiple hypotheses - extensive thinking */
+  DELIBERATE = 'deliberate',
+}
+
+/** Task complexity with dynamic adjustment potential */
+export interface TaskComplexity {
+  /** Overall complexity level */
+  level: 'simple' | 'moderate' | 'complex';
+  /** Estimated steps needed */
+  estimatedSteps: number;
+  /** Confidence in complexity assessment (0-1) */
+  confidence: number;
+  /** Key uncertainty factors */
+  uncertainties: string[];
+  /** Required thinking approaches */
+  recommendedLevels: ThinkingLevel[];
+  /** Can be resolved with instinct (pattern match)? */
+  isPatternRecognizable: boolean;
+  /** Requires exploration/verification? */
+  requiresVerification: boolean;
+}
+
 export enum ThinkingMode {
   /** CREATIVE: Generate novel ideas, explore multiple possibilities */
   CREATIVE = 'CREATIVE',
@@ -129,9 +170,11 @@ export interface Perception {
   ambiguities: string[];
   /** Success criteria */
   successCriteria: string[];
-  /** Task complexity classification (determined during PERCEIVE) */
-  complexity: 'simple' | 'complex';
-  /** For simple tasks: a ready-to-execute single-step plan */
+  /** Dynamic task complexity with confidence and recommendations */
+  complexity: TaskComplexity;
+  /** Thinking level based on task analysis */
+  thinkingLevel: ThinkingLevel;
+  /** For simple/instinct tasks: a ready-to-execute single-step plan */
   fastPlan?: Plan;
 }
 
@@ -147,8 +190,8 @@ export interface Assessment {
   missingSkillCategories: string[];
   /** Identified risks */
   risks: string[];
-  /** Assessed task complexity */
-  complexity: 'simple' | 'moderate' | 'complex';
+  /** Dynamic task complexity (may adjust based on capability assessment) */
+  complexity: TaskComplexity;
 }
 
 /** PLAN phase output: execution plan */

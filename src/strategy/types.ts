@@ -5,11 +5,13 @@ import type {
   Plan,
   Reflection,
   TaskResult,
+  ThinkingLevel,
 } from '../types';
 import type { TokenTracker } from '../token/token-tracker';
 
 // ============================================================
 // Execution Strategy — Strategy pattern for task execution paths
+// Based on ThinkingLevel (human System 1/2 thinking)
 // ============================================================
 
 /** Parameters passed to execution strategies */
@@ -19,8 +21,10 @@ export interface StrategyParams {
   userInput: string;
   memoryText: string;
   tracker: TokenTracker;
-  /** Perception result (includes complexity classification) */
+  /** Perception result (includes complexity and thinking level) */
   perception: Perception;
+  /** Selected thinking level for this execution */
+  thinkingLevel: ThinkingLevel;
 }
 
 /** Cognitive operations delegate — exposes brain capabilities to strategies */

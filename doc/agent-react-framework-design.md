@@ -76,37 +76,51 @@ The framework collaborates with external systems through abstract interfaces. Th
 
 ### 2.1 Overview
 
-The framework processes every task through a **five-phase cognitive cycle**. The first phase — PERCEIVE — simultaneously classifies task complexity, enabling an **execution strategy** to be selected before the remaining phases run:
+The framework processes every task through a **five-phase cognitive cycle**. The first phase — PERCEIVE — determines task complexity and recommended thinking level, enabling an **execution strategy** to be selected:
 
 ```
 Task Input
   │
   ▼
 ┌──────────────────────────────────────────────────────┐
-│  Phase 1: PERCEIVE — Understand Task & Classify       │
+│  Phase 1: PERCEIVE — Understand Task & Classify     │
 │  Identify intent, clarify ambiguities, define success │
-│  criteria, and classify complexity (simple / complex) │
-│  For simple tasks: also produce a ready-to-execute    │
-│  single-step plan (fastPlan)                          │
-├─────────────┬──────────────────────────────────────── |
+│  criteria, classify complexity & thinking level      │
+│  For simple tasks: also produce fastPlan           │
+├─────────────┬──────────────────────────────────────── │
 │             │                                        │
-│   simple    │   complex                              │
-│      │      │      │                                 │
-│      ▼      │      ▼                                 │
-│  FastPath   │  FullCycle                             │
-│  Strategy   │  Strategy                              │
-│  EXECUTE    │  ASSESS → PLAN → EXECUTE → REFLECT     │
-│      │      │      │                                 │
-│      ▼      │      ▼                                 │
-│   Result    │   Result                               │
+│   simple   │   moderate   │   complex               │
+│      │     │     │      │     │                     │
+│      ▼     │     ▼      │     ▼                  │
+│  INSTINCT  │  ANALYTICAL │  DELIBERATE            │
+│  (Pattern │  (Step-by │  (Deep think +        │
+│   match)  │   step)   │   replan loop)        │
 └─────────────┴────────────────────────────────────────┘
 ```
 
-**Fast Path** (simple tasks): PERCEIVE produces a single-step plan (`fastPlan`), the `FastPathStrategy` skips ASSESS/PLAN/REFLECT and goes directly to EXECUTE. Reduces LLM calls from 5+ to 2.
+### ThinkingLevel (Human System 1/2 Thinking)
 
-**Full Cycle** (complex tasks): The `FullCycleStrategy` proceeds through ASSESS → PLAN → EXECUTE → REFLECT as described below.
+The framework mimics human thinking modes defined by `ThinkingLevel`:
 
-Both strategies implement the `ExecutionStrategy` interface, making it easy to add new execution paths (e.g., a `MediumPathStrategy`) without modifying `AgentBrain`.
+| Level | Strategy | Description |
+|-------|----------|-------------|
+| **INSTINCT** | InstinctStrategy | Pattern matching, "I know this" - fast, automatic. Skip ASSESS/PLAN, use fastPlan directly. |
+| **ANALYTICAL** | AnalyticalStrategy | Step-by-step reasoning, verification - controlled, methodical. ASSESS → PLAN → EXECUTE. |
+| **DELIBERATE** | DelibrateStrategy | Deep reasoning, exploration, multiple hypotheses - extensive. Full cycle with replan loop. |
+
+### ExecutionMode
+
+Users can choose execution mode via `AgentBrain.run(input, { mode })`:
+
+| Mode | Strategy | Phases |
+|------|---------|-------|
+| `think` | THINK | PERCEIVE + ASSESS |
+| `plan` | PLAN | PERCEIVE + ASSESS + PLAN |
+| `execute` | INSTINCT or ANALYTICAL | Depends on task (fastPlan → INSTINCT, else ANALYTICAL) |
+| `full` | DELIBERATE | Full execution + REFLECT |
+| `auto` | Auto-select | Based on PERCEIVE complexity |
+
+All strategies implement the `ExecutionStrategy` interface, making it easy to add new execution paths.
 
 ```
 Task Input
@@ -168,11 +182,11 @@ Task Input
 - **Clarify ambiguities**: Identify ambiguities in the task description
   - When ambiguous, flag it (can proactively ask questions or make reasonable assumptions later)
 - **Define success criteria**: Clarify what constitutes a "completed" result
-- **Classify complexity**: Determine whether the task is `simple` or `complex`
-  - Simple: single-action, clear 1-2 tool call mapping
-  - Complex: multi-step, dependencies, analysis/synthesis, unclear approach
-  - When in doubt, classify as `complex`
-- **Generate fast plan** (simple tasks only): Produce a single-step `fastPlan` so ExecutionStrategy can skip ASSESS/PLAN/REFLECT
+- **Classify complexity**: Determine task complexity (`simple` / `moderate` / `complex`) and recommended `ThinkingLevel`
+  - Simple + pattern recognizable: INSTINCT (use fastPlan)
+  - Moderate: ANALYTICAL (step-by-step)
+  - Complex: DELIBERATE (deep thinking with replan)
+- **Generate fast plan** (simple tasks): Produce a single-step `fastPlan` for INSTINCT strategy
 
 **Output structure** — `Perception`:
 
@@ -1132,7 +1146,7 @@ When `sandbox` is omitted, AgentBrain uses a built-in rule sandbox subclass whos
 
 | Component | Extension Method | Description |
 |-----------|-----------------|-------------|
-| Execution Strategy | Strategy pattern | Implement `ExecutionStrategy` interface to define new execution paths (e.g., `FastPathStrategy`, `FullCycleStrategy`) |
+| Execution Strategy | Strategy pattern | Implement `ExecutionStrategy` interface to define new paths (e.g., `runInstinctStrategy`, `runAnalyticalStrategy`, `runDeliberateStrategy`) |
 | Thinking Mode Scheduler | Replace scheduling strategy | Customize thinking mode weight distribution for each cognitive phase |
 | Context Assembly Strategy | Strategy pattern | Replace priority ordering and compression algorithms |
 | Termination Condition | Condition chain | Add custom termination conditions |

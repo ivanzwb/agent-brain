@@ -44,8 +44,10 @@ export { clearPromptTemplateCache, interpolate, loadPrompt } from './prompts/loa
 export {
   // Enums
   CognitivePhase,
+  ExecutionMode,
   StepPhase,
   TaskStatus,
+  ThinkingLevel,
   ThinkingMode,
   TerminationReason,
 } from './types';

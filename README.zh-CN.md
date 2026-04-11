@@ -10,12 +10,13 @@
 
 [English](./README.md) | 中文
 
-## 🔹 核心亮点
+## 核心亮点
 
 | 特性 | 说明 |
 |------|------|
 | **五阶段认知循环** | PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT |
-| **自适应快速通道** | PERCEIVE 阶段同时分类复杂度，简单任务通过策略模式直接进入 EXECUTE（2 次 LLM 调用） |
+| **ThinkingLevel** | INSTINCT（模式匹配）/ ANALYTICAL（按步骤推理）/ DELIBERATE（深度思考），通过策略模式 |
+| **ExecutionMode** | `think` / `plan` / `execute` / `full` / `auto` 模式 |
 | **嵌套 ReAct** | 外层任务规划 + 内层按步骤独立执行循环 |
 | **动态技能获取** | 执行过程中自动搜索并安装新技能 |
 | **交互式用户输入** | 通过 `ask_user` 工具暂停并等待用户输入 |
@@ -28,21 +29,26 @@
 
 ## 概述
 
-本框架将智能体的任务处理建模为**模拟人类思维过程的五阶段认知循环**：
+本框架将智能体的任务处理建模为模拟人类思维过程的五阶段认知循环：
 
 ```
 PERCEIVE → ASSESS → PLAN → EXECUTE → REFLECT
 ```
 
-PERCEIVE 阶段同时分类任务复杂度，选择合适的**执行策略**：
-- **简单任务**（如“查找 stock 相关的 skill”）：`FastPathStrategy` 直接进入 EXECUTE（2 次 LLM 调用）
-- **复杂任务**（如“分析服务器性能并生成报告”）：`FullCycleStrategy` 执行完整的 ASSESS → PLAN → EXECUTE → REFLECT 循环
+PERCEIVE 阶段分析任务复杂度并推荐 ThinkingLevel，选择执行策略：
 
-- **PERCEIVE（感知）**：理解任务，识别意图，澄清模糊点
-- **ASSESS（评估）**：评估能力与资源，判断技能缺口
-- **PLAN（规划）**：分解为有序的执行步骤
-- **EXECUTE（执行）**：通过按步骤的 ReAct 循环执行（Thought → Action → Observation）
-- **REFLECT（反思）**：评估结果，总结经验，决定是否需要重新规划
+| 复杂度 | ThinkingLevel | 策略 | 阶段 |
+|--------|-------------|------|------|
+| 简单+可模式匹配 | INSTINCT | runInstinctStrategy | fastPlan → EXECUTE |
+| 中等 | ANALYTICAL | runAnalyticalStrategy | ASSESS → PLAN → EXECUTE |
+| 复杂 | DELIBERATE | runDeliberateStrategy | 完整循环 + REFLECT |
+
+执行模式（AgentBrain.run(input, { mode })）：
+- think：PERCEIVE + ASSESS
+- plan：PERCEIVE + ASSESS + PLAN
+- execute：INSTINCT 或 ANALYTICAL
+- full：DELIBERATE
+- auto：根据复杂度自动选择
 
 ### 双层 ReAct 架构
 

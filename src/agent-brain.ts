@@ -1,7 +1,9 @@
 import {
   CognitivePhase,
+  ExecutionMode,
   TaskStatus,
   TerminationReason,
+  ThinkingLevel,
   resolveConfig,
   type AgentBrainOptions,
   type Assessment,
@@ -24,10 +26,15 @@ import { InnateToolHub } from './innate-tools/innate-tool-hub';
 import { registerDefaultInnateTools } from './innate-tools/register-default-innate-tools';
 import { MemoryHub } from './memory/memory-hub';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
-import { SecuritySandbox, type PermissionRequest } from './sandbox/security-sandbox';
-import { FastPathStrategy } from './strategy/fast-path-strategy';
-import { FullCycleStrategy } from './strategy/full-cycle-strategy';
-import type { ExecutionStrategy, CognitiveOps } from './strategy/types';
+import { SecuritySandbox } from './sandbox/security-sandbox';
+import {
+  runThinkStrategy,
+  runPlanStrategy,
+  runInstinctStrategy,
+  runAnalyticalStrategy,
+  runDeliberateStrategy,
+} from './strategy';
+import { type CognitiveOps } from './strategy/types';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -110,17 +117,22 @@ export class AgentBrain {
       /** Stable id for memory / conversation grouping (e.g. per cron job). */
       conversationId?: string;
       /**
-       * After PERCEIVE, always use {@link FastPathStrategy} (PERCEIVE → EXECUTE only).
-       * If the model omitted `fastPlan`, a single-step plan from `userInput` is used.
+       * Execution mode (default: `auto`):
+       * - `auto`: derived from perception.complexity (simple→execute, moderate→plan, complex→full)
+       * - `think`: PERCEIVE + ASSESS only
+       * - `plan`: PERCEIVE + ASSESS + PLAN
+       * - `execute`: PERCEIVE + ASSESS + PLAN + EXECUTE
+       * - `full`: PERCEIVE + ASSESS + PLAN + EXECUTE + REFLECT
        */
-      fastPath?: boolean;
+      mode?: ExecutionMode;
     },
   ): Promise<TaskResult> {
     const taskId = options?.conversationId ?? generateTaskId();
+    const mode = options?.mode ?? ExecutionMode.AUTO;
     const startTime = Date.now();
     const tracker = new TokenTracker(this.model);
 
-    this.emit('task:start', { taskId, userInput });
+    this.emit('task:start', { taskId, userInput, mode });
     await this.memory.conversation_track(taskId, 'user', userInput);
 
     try {
@@ -133,26 +145,54 @@ export class AgentBrain {
       let perception = await this.perceive(userInput, memory, tracker);
       this.emit('phase:perceive', { taskId, perception });
 
-      const useFastPath = options?.fastPath === true || perception.complexity === 'simple';
-      if (useFastPath) {
-        perception = {
-          ...perception,
-          complexity: 'simple',
-          fastPlan:
-            perception.fastPlan ?? {
-              strategy: 'Execute the task described in the user message.',
-              steps: [{ id: 's1', description: userInput, dependsOn: [] }],
-              expectedOutcome: 'Complete the requested work.',
-            },
-        };
+      // ---- Resolve mode from complexity when AUTO ----
+      let resolvedMode = mode;
+      if (mode === ExecutionMode.AUTO) {
+        const level = perception.complexity.level;
+        if (perception.complexity.isPatternRecognizable) {
+          resolvedMode = ExecutionMode.EXECUTE;
+        } else if (level === 'simple' || perception.thinkingLevel === ThinkingLevel.INSTINCT) {
+          resolvedMode = ExecutionMode.EXECUTE;
+        } else if (level === 'moderate' || perception.thinkingLevel === ThinkingLevel.ANALYTICAL) {
+          resolvedMode = ExecutionMode.PLAN;
+        } else {
+          resolvedMode = ExecutionMode.FULL;
+        }
       }
 
-      const strategy: ExecutionStrategy = useFastPath
-        ? new FastPathStrategy()
-        : new FullCycleStrategy();
+      // ---- Mode: THINK ----
+      if (resolvedMode === ExecutionMode.THINK) {
+        return runThinkStrategy(
+          { taskId, startTime, userInput, memoryText: memory, tracker, perception, thinkingLevel: ThinkingLevel.INSTINCT },
+          this.createCognitiveOps(),
+        );
+      }
 
-      return strategy.run(
-        { taskId, startTime, userInput, memoryText: memory, tracker, perception },
+      // ---- Mode: PLAN ----
+      if (resolvedMode === ExecutionMode.PLAN) {
+        return runPlanStrategy(
+          { taskId, startTime, userInput, memoryText: memory, tracker, perception, thinkingLevel: ThinkingLevel.ANALYTICAL },
+          this.createCognitiveOps(),
+        );
+      }
+
+      // ---- Mode: EXECUTE ----
+      if (resolvedMode === ExecutionMode.EXECUTE) {
+        if (perception.fastPlan && perception.complexity.isPatternRecognizable) {
+          return runInstinctStrategy(
+            { taskId, startTime, userInput, memoryText: memory, tracker, perception, thinkingLevel: ThinkingLevel.INSTINCT },
+            this.createCognitiveOps(),
+          );
+        }
+        return runAnalyticalStrategy(
+          { taskId, startTime, userInput, memoryText: memory, tracker, perception, thinkingLevel: ThinkingLevel.ANALYTICAL },
+          this.createCognitiveOps(),
+        );
+      }
+
+      // ---- Mode: FULL (default) ----
+      return runDeliberateStrategy(
+        { taskId, startTime, userInput, memoryText: memory, tracker, perception, thinkingLevel: perception.thinkingLevel },
         this.createCognitiveOps(),
       );
     } catch (err) {
@@ -432,11 +472,42 @@ export class AgentBrain {
   // ---- Empty fallbacks for parse failures ----
 
   private emptyPerception(): Perception {
-    return { surfaceRequest: '', deepIntent: '', constraints: [], ambiguities: [], successCriteria: [], complexity: 'complex' };
+    return {
+      surfaceRequest: '',
+      deepIntent: '',
+      constraints: [],
+      ambiguities: [],
+      successCriteria: [],
+      complexity: {
+        level: 'complex',
+        estimatedSteps: 10,
+        confidence: 0,
+        uncertainties: [],
+        recommendedLevels: [ThinkingLevel.DELIBERATE],
+        isPatternRecognizable: false,
+        requiresVerification: true,
+      },
+      thinkingLevel: ThinkingLevel.DELIBERATE,
+    };
   }
 
   private emptyAssessment(): Assessment {
-    return { skillCategories: [], capabilityMatch: '', matchedSkillCategories: [], missingSkillCategories: [], risks: [], complexity: 'simple' };
+    return {
+      skillCategories: [],
+      capabilityMatch: '',
+      matchedSkillCategories: [],
+      missingSkillCategories: [],
+      risks: [],
+      complexity: {
+        level: 'simple',
+        estimatedSteps: 1,
+        confidence: 0.5,
+        uncertainties: [],
+        recommendedLevels: [ThinkingLevel.INSTINCT],
+        isPatternRecognizable: true,
+        requiresVerification: false,
+      },
+    };
   }
 
   private emptyPlan(): Plan {
