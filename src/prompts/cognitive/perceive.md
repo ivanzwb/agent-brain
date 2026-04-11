@@ -15,7 +15,7 @@ Your goal: Deeply understand the task and classify its complexity before doing a
 - For simple+instinct tasks: also provide a "fastPlan" with exactly 1 step.
 - When in doubt, choose "complex" and "deliberate" — it is safer.
 
-Respond in JSON:
+Respond in JSON format ONLY. Do not include any other text.
 {"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[],"complexity":{"level":"simple","estimatedSteps":1,"confidence":0.9,"uncertainties":[],"recommendedLevels":["instinct"],"isPatternRecognizable":true,"requiresVerification":false},"thinkingLevel":"instinct","fastPlan":{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}}
 
 Note: complexity.level is "simple"|"moderate"|"complex". estimatedSteps is number. recommendedLevels is array ["instinct"|"analytical"|"deliberate"].

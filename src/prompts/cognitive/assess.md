@@ -15,5 +15,5 @@ Step 3 — Gaps & risks
 - Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill (for example, sending emails, calling external APIs, or other integrations), record this and treat it as "can be filled by acquiring a skill" rather than "impossible".
 - Summarize overall complexity and the main risks.
 
-Respond in JSON:
+Respond in JSON format ONLY. Do not include any other text.
 {"capabilityMatch":"...","skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":{"level":"simple","estimatedSteps":1,"confidence":0.9,"uncertainties":[],"recommendedLevels":["instinct"],"isPatternRecognizable":true,"requiresVerification":false}}
