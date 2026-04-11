@@ -13,10 +13,18 @@ export async function runThinkStrategy(params: StrategyParams, ops: CognitiveOps
   const assessment = await ops.assess(userInput, perception, tracker);
   ops.emit('phase:assess', { taskId, assessment, thinkingLevel: ThinkingLevel.INSTINCT });
 
+  // Format assessment as final answer
+  const finalAnswer = `Assessment:\n` +
+    `Required skills: ${assessment.skillCategories.join(', ') || 'none'}\n` +
+    `Capability match: ${assessment.capabilityMatch || 'N/A'}\n` +
+    `Matched: ${assessment.matchedSkillCategories.join(', ') || 'none'}\n` +
+    `Missing: ${assessment.missingSkillCategories.join(', ') || 'none'}\n` +
+    `Risks: ${assessment.risks.join(', ') || 'none'}`;
+
   return ops.buildResult(taskId, startTime, tracker, {
     status: TaskStatus.COMPLETED,
     terminationReason: TerminationReason.COMPLETED,
-    finalAnswer: 'Assessment completed',
+    finalAnswer,
     steps: [],
     cognition: { perception, assessment, plan: ops.emptyPlan() },
   });

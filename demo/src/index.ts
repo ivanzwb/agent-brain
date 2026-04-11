@@ -1,20 +1,19 @@
-import { createMemory, type EmbeddingProvider } from '@biosbot/agent-memory';
+import 'dotenv/config';
+import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+import { createMemory, EmbeddingProvider } from '@biosbot/agent-memory';
 import { OpenAI } from 'openai';
 import { SkillFramework } from '@biosbot/agent-skills';
-import { AgentBrain, type CronHub } from '../../src';
-import { formatCronJobUserInput } from './format-cron-job-input';
+import { AgentBrain, type CronHub, ExecutionMode } from '../../src';
 import { OpenAIClient } from '../../src/model/openai-client';
 import { CronHubAdapter } from './cron-hub-adapter';
 import { SkillHubAdapter } from './skill-hub-adapter';
 import { MemoryHubAdapter } from './memory-hub-adapter';
 import * as readline from 'readline';
-
-process.env.OPENAI_API_KEY = 'sk-f1450f3f4f804d0487851efa26009094';
-process.env.OPENAI_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-process.env.OPENAI_MODEL = 'qwen-plus-0112';
-process.env.SANDBOX_DIR = process.env.SANDBOX_DIR ?? './sandbox-data';
-process.env.MEMORY_DATA_DIR = process.env.MEMORY_DATA_DIR ?? './memory-data';
-process.env.SKILLS_DIR = process.env.SKILLS_DIR ?? './skills';
+import { CronScheduledJobSnapshot } from './cron-hub-adapter';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -179,7 +178,7 @@ async function main() {
       console.log(`\n[cron] ▶ ${job.name} (${job.id}) → fast path`);
       const brain = createAgentBrain(cron);
       try {
-        const result = await brain.run(payload, { conversationId, fastPath: true });
+        const result = await brain.run(payload, { conversationId, mode: ExecutionMode.EXECUTE });
         console.log(`[cron] ✓ ${job.name} status=${result.status}`);
         if (result.finalAnswer) {
           console.log(`[cron] answer (truncated): ${result.finalAnswer.slice(0, 500)}${result.finalAnswer.length > 500 ? '…' : ''}`);
@@ -203,6 +202,19 @@ async function main() {
   });
 
   askTask();
+}
+
+/**
+ * Builds the user message passed to `AgentBrain.run` with `{ fastPath: true }` for cron triggers.
+ * Encourages self-contained runs: frozen `resolvedResources` + task `command`.
+ */
+export function formatCronJobUserInput(job: CronScheduledJobSnapshot): string {
+  const header = `[Scheduled job: ${job.name}] [jobId=${job.id}]`;
+  const res =
+    job.resolvedResources && Object.keys(job.resolvedResources).length > 0
+      ? `\n[Resolved resources — do not ask the user to re-supply these]\n${JSON.stringify(job.resolvedResources, null, 2)}\n`
+      : '\n';
+  return `${header}${res}\n[Task]\n${job.command}`;
 }
 
 main().catch(console.error);

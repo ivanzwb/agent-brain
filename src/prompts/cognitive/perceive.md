@@ -4,13 +4,18 @@ Your goal: Deeply understand the task and classify its complexity before doing a
 - Spot ambiguities — what is unclear or assumed?
 - Define what success looks like
 - Consider: if this request came from a real person, what would they REALLY want?
-- Classify task complexity:
-  SIMPLE: single-action requests (search, list, read, run), direct Q&A with 1-2 tool calls, or clear mapping to one tool.
-  COMPLEX: multi-step tasks, tasks with dependencies, analysis/synthesis/creative work, or unclear approach.
-- For SIMPLE tasks: also provide a "fastPlan" with exactly 1 step so execution can start immediately.
-- When in doubt, choose "complex" — it is safer.
+- Classify task complexity level (pick one):
+  - simple: single-action, 1-step, clear mapping to known tool
+  - moderate: multi-step but straightforward, clear approach
+  - complex: dependencies, analysis/synthesis, unclear approach
+- Determine recommended thinking level (pick one):
+  - instinct: pattern recognizable, I know this
+  - analytical: step-by-step reasoning needed
+  - deliberate: need exploration, multiple hypotheses
+- For simple+instinct tasks: also provide a "fastPlan" with exactly 1 step.
+- When in doubt, choose "complex" and "deliberate" — it is safer.
 
 Respond in JSON:
-{"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[],"complexity":"simple|complex","fastPlan":{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}}
+{"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[],"complexity":{"level":"simple","estimatedSteps":1,"confidence":0.9,"uncertainties":[],"recommendedLevels":["instinct"],"isPatternRecognizable":true,"requiresVerification":false},"thinkingLevel":"instinct","fastPlan":{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}}
 
-Note: "fastPlan" is required when complexity is "simple", omit when "complex".
+Note: complexity.level is "simple"|"moderate"|"complex". estimatedSteps is number. recommendedLevels is array ["instinct"|"analytical"|"deliberate"].

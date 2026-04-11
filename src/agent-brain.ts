@@ -26,7 +26,7 @@ import { InnateToolHub } from './innate-tools/innate-tool-hub';
 import { registerDefaultInnateTools } from './innate-tools/register-default-innate-tools';
 import { MemoryHub } from './memory/memory-hub';
 import { KnowledgeHub } from './knowledge/knowledge-hub';
-import { SecuritySandbox } from './sandbox/security-sandbox';
+import { SecuritySandbox, type PermissionLevel } from './sandbox/security-sandbox';
 import {
   runThinkStrategy,
   runPlanStrategy,
@@ -74,6 +74,12 @@ export class AgentBrain {
     this.sandbox = opts.sandbox
       ? opts.sandbox
       : new SecuritySandbox(this.innateToolHub, this.config.workingDirectory);
+
+    // Default allow for common file operations (no repeated prompts)
+    this.sandbox.addRules([
+      { action: 'fs_list', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'fs_read', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+    ]);
 
     this.memory = opts.memory;
     this.knowledge = opts.knowledge;
@@ -137,9 +143,22 @@ export class AgentBrain {
 
     try {
       // ---- Memory retrieval: recall relevant experience before understanding task ----
+      // Get short-term conversation memory (recent chats)
+      const conversationResult = await this.memory.conversation_search(userInput, 5);
+      console.log('[Memory] conversation raw:', conversationResult);
+      const conversationData = JSON.parse(conversationResult);
+      const conversationMemory = conversationData.messages?.map((m: { role: string; content: string }) => `[${m.role}]: ${m.content}`).join('\n') ?? '';
+
+      // Get long-term semantic memory
       const memoryResult = await this.memory.memory_search(userInput, 3);
+      console.log('[Memory] long-term raw:', memoryResult);
       const memoryData = JSON.parse(memoryResult);
-      const memory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
+      const longTermMemory = memoryData.results?.map((r: { value: string }) => r.value).join('\n') ?? '';
+
+      // Combine both
+      const memory = conversationMemory ? `${conversationMemory}\n\n--- Long-term ---\n${longTermMemory}` : longTermMemory;
+      console.log('[Memory] conversation:', conversationMemory.substring(0, 200));
+      console.log('[Memory] long-term:', longTermMemory.substring(0, 200));
 
       // ---- Phase 1: PERCEIVE (includes complexity classification) ----
       let perception = await this.perceive(userInput, memory, tracker);
@@ -260,7 +279,10 @@ export class AgentBrain {
     tracker.trackPrompt(baseMessages);
     const response = await this.model.chat(baseMessages);
     tracker.trackCompletion(response.content);
-    return this.parseJson<Perception>(response.content, this.emptyPerception());
+    console.log('[PERCEIVE] raw response:', response.content.substring(0, 300));
+    const perception = this.parseJson<Perception>(response.content, this.emptyPerception());
+    console.log('[PERCEIVE] parsed:', JSON.stringify(perception).substring(0, 200));
+    return perception;
   }
 
   // ===========================================================
@@ -350,6 +372,7 @@ export class AgentBrain {
     tracker.trackPrompt(messages);
     const response = await this.model.chat(messages);
     tracker.trackCompletion(response.content);
+    console.log('[PLAN] raw response:', response.content.substring(0, 300));
     return this.parseJson<Plan>(response.content, this.emptyPlan());
   }
 

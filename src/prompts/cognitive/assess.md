@@ -16,4 +16,4 @@ Step 3 — Gaps & risks
 - Summarize overall complexity and the main risks.
 
 Respond in JSON:
-{"capabilityMatch":"...","skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":"simple|moderate|complex"}
+{"capabilityMatch":"...","skillCategories":["summarization","code analysis"],"matchedSkillCategories":[],"missingSkillCategories":[],"risks":[],"complexity":{"level":"simple","estimatedSteps":1,"confidence":0.9,"uncertainties":[],"recommendedLevels":["instinct"],"isPatternRecognizable":true,"requiresVerification":false}}

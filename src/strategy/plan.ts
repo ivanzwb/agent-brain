@@ -16,10 +16,16 @@ export async function runPlanStrategy(params: StrategyParams, ops: CognitiveOps)
   const plan = await ops.plan(userInput, perception, assessment, tracker);
   ops.emit('phase:plan', { taskId, plan, thinkingLevel: ThinkingLevel.ANALYTICAL });
 
+  // Format plan as final answer
+  const planText = plan.steps.map(s => `- ${s.description}`).join('\n');
+  const finalAnswer = plan.steps.length > 0 
+    ? `Plan:\n${planText}\n\nStrategy: ${plan.strategy}`
+    : `Strategy: ${plan.strategy}\nExpected: ${plan.expectedOutcome}`;
+
   return ops.buildResult(taskId, startTime, tracker, {
     status: TaskStatus.COMPLETED,
     terminationReason: TerminationReason.COMPLETED,
-    finalAnswer: 'Plan completed',
+    finalAnswer,
     steps: [],
     cognition: { perception, assessment, plan },
   });

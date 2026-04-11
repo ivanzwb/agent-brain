@@ -427,7 +427,7 @@ export class FSDeleteTool implements InnateTool {
 
 export class FSListTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_list;
-  readonly actionCategory = 'fs_read' as const;
+  readonly actionCategory = 'fs_list' as const;
   readonly permissionTargetArgs = ['path'];
 
   async execute(args: Record<string, unknown>): Promise<string> {

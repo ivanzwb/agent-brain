@@ -4,3 +4,5 @@ dist/
 coverage/
 memory-data/
 skills/
+sandbox-data/
+.env

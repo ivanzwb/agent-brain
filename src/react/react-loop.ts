@@ -244,6 +244,7 @@ export class ReactLoop {
         const sandboxResult = await this.checkSandboxPermission(call.name, call.arguments);
         if (sandboxResult) {
           observation = sandboxResult;
+          console.log(`[Sandbox] denied:`, sandboxResult);
           steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));
           messages.push({ role: 'tool', content: observation, toolCallId: call.id });
           eventPublisher?.publish('step:observation', { step: controller.currentStep, content: observation });
@@ -255,6 +256,7 @@ export class ReactLoop {
       if (innateTool) {
         try {
           observation = await this.innateToolHub.execute(call.name, call.arguments);
+          console.log(`[Tool] ${call.name} result:`, observation.substring(0, 500));
           if (this.memory && call.name === 'ask_user') {
             const q = call.arguments['question'];
             const userResponse =
@@ -286,10 +288,12 @@ export class ReactLoop {
             });
           } else {
             observation = await this.skillHub.execute(skillName, toolName, call.arguments);
+            console.log(`[Tool] ${call.name} result:`, observation.substring(0, 500));
           }
         } catch (err) {
           controller.recordFailure();
           observation = `[Error] Tool execution failed: ${String(err)}`;
+          console.log(`[Tool] ${call.name} error:`, String(err));
         }
       }
 

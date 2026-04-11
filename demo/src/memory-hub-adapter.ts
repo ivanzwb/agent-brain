@@ -25,7 +25,7 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
   async conversation_search(query: string, limit?: number): Promise<string> {
     const topK = limit ?? 10;
     const results = await this.mem.searchConversation(query, topK);
-    return JSON.stringify({ results });
+    return JSON.stringify({ messages: results });
   }
 
   async conversation_history(limit?: number): Promise<string> {

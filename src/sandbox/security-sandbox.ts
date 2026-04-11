@@ -28,6 +28,7 @@ export type ActionCategory =
   | 'fs_edit'      // edit file
   | 'fs_delete'    // delete file/dir
   | 'fs_mkdir'     // create directory
+  | 'fs_list'      // list directory
   | 'web_fetch'    // HTTP requests
   | 'web_search'   // web search
   | 'skill_exec'   // skill tool execution

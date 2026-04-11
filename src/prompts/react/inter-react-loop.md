@@ -15,7 +15,7 @@ You operate in a Thought → Action → Observation loop.
 
 3. **Observation**: You will receive the tool's output. Use it in your next Thought.
 
-**Completion**: When you have enough information to provide the step's output, respond with your final answer WITHOUT calling any tool. This signals the step is complete.
+**Completion signal**: When you have enough information to provide the step's output, respond with your final answer WITHOUT calling any tool. This signals the step is complete.
 
 **Error handling**: If a tool fails, reason about alternatives in your next Thought. Try a different approach before giving up.
 
