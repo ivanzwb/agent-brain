@@ -42,7 +42,7 @@ export class OpenAIClient implements IModelClient {
     this.client = new OpenAI({
       baseURL: opts.baseURL,
       apiKey: opts.apiKey ?? '',
-      timeout: opts.timeoutMs ?? 60_000,
+      timeout: opts.timeoutMs === undefined ? 0 : (opts.timeoutMs ?? 60_000),
     });
     this.model = opts.model;
     this.temperature = opts.temperature ?? 0.7;

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-import { createMemory, EmbeddingProvider } from '@biosbot/agent-memory';
+import { createMemory, type EmbeddingProvider } from '@biosbot/agent-memory';
 import { OpenAI } from 'openai';
 import { SkillFramework } from '@biosbot/agent-skills';
 import { AgentBrain, type CronHub, ExecutionMode } from '../../src';
@@ -24,14 +24,14 @@ const embeddingProvider: EmbeddingProvider = {
   dimensions: 1536,
   async embed(text: string): Promise<number[]> {
     const resp = await openai.embeddings.create({
-      model: 'text-embedding-v1',
+      model: process.env.EMBEDDING_MODEL ?? 'nomic-embed-text',
       input: text,
     });
     return resp.data[0].embedding;
   },
 };
 
-type CLIState = 'idle' | 'waiting-task' | 'processing' | 'waiting-user-input';
+  type CLIState = 'idle' | 'waiting-task' | 'processing' | 'waiting-user-input';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -168,7 +168,9 @@ async function main() {
     baseURL: process.env.OPENAI_BASE_URL,
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-    temperature: 0.1,
+    temperature: 0.4,
+    contextWindow: 128000,
+    timeoutMs: 0,
   });
 
   cron = new CronHubAdapter({

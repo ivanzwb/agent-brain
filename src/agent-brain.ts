@@ -98,6 +98,15 @@ export class AgentBrain {
     this.budget = new PromptBudget(this.model);
   }
 
+  private buildSystemBase(guidance: string, phasePrompt: string): string {
+    const parts = [this.config.systemPrompt];
+    if (this.config.workingDirectory) {
+      parts.push(`Current working directory: ${this.config.workingDirectory}`);
+    }
+    parts.push('', guidance, '', phasePrompt);
+    return parts.join('\n');
+  }
+
   /**
    * Provide user input when the agent is waiting for input.
    * Call this when you receive a 'user:input-request' event.
@@ -261,7 +270,7 @@ export class AgentBrain {
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
 
     // Build fixed parts
-    const systemBase = [this.config.systemPrompt, '', guidance, '', phasePrompt].join('\n');
+    const systemBase = this.buildSystemBase(guidance, phasePrompt);
     const baseMessages: Message[] = [
       { role: 'system', content: systemBase },
       { role: 'user', content: userInput },
@@ -278,6 +287,7 @@ export class AgentBrain {
     }
 
     tracker.trackPrompt(baseMessages);
+    console.log('[PERCEIVE] messages:', JSON.stringify(baseMessages, null, 2));
     const response = await this.model.chat(baseMessages);
     tracker.trackCompletion(response.content);
     console.log('[PERCEIVE] raw response:', response.content.substring(0, 300));
@@ -313,13 +323,15 @@ export class AgentBrain {
     const resourceOverview = parts.join('\n\n');
 
     const messages: Message[] = [
-      { role: 'system', content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}\n\n${resourceOverview}` },
+      { role: 'system', content: `${this.buildSystemBase(guidance, phasePrompt)}\n\n${resourceOverview}` },
       { role: 'user', content: userInput },
       { role: 'assistant', content: `[PERCEIVE result]\n${JSON.stringify(perception)}` },
     ];
 
-    const response = await this.model.chat(messages);
-    tracker.trackPrompt(messages);
+    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    tracker.trackPrompt(trimmedMessages);
+    console.log('[REFLECT] messages:', JSON.stringify(trimmedMessages, null, 2));
+    const response = await this.model.chat(trimmedMessages);
     tracker.trackCompletion(response.content);
     return this.parseJson<Assessment>(response.content, this.emptyAssessment());
   }
@@ -349,7 +361,7 @@ export class AgentBrain {
     const messages: Message[] = [
       {
         role: 'system',
-        content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}${installedSkillsText}`,
+        content: `${this.buildSystemBase(guidance, phasePrompt)}${installedSkillsText}`,
       },
       { role: 'user', content: userInput },
     ];
@@ -370,8 +382,9 @@ export class AgentBrain {
       });
     }
 
-    tracker.trackPrompt(messages);
-    const response = await this.model.chat(messages);
+    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    tracker.trackPrompt(trimmedMessages);
+    const response = await this.model.chat(trimmedMessages);
     tracker.trackCompletion(response.content);
     console.log('[PLAN] raw response:', response.content.substring(0, 300));
     return this.parseJson<Plan>(response.content, this.emptyPlan());
@@ -395,13 +408,7 @@ export class AgentBrain {
 
     const guidance = this.scheduler.generateGuidance(CognitivePhase.EXECUTE);
     const phasePrompt = this.scheduler.getPhasePrompt(CognitivePhase.EXECUTE);
-    const executeSystemPrompt = [
-      this.config.systemPrompt,
-      '',
-      guidance,
-      '',
-      phasePrompt,
-    ].join('\n');
+    const executeSystemPrompt = this.buildSystemBase(guidance, phasePrompt);
 
     const loop = new ReactLoop({
       controller,
@@ -449,13 +456,14 @@ export class AgentBrain {
     ].join('\n');
 
     const messages: Message[] = [
-      { role: 'system', content: `${this.config.systemPrompt}\n\n${guidance}\n\n${phasePrompt}` },
+      { role: 'system', content: this.buildSystemBase(guidance, phasePrompt) },
       { role: 'user', content: userInput },
       { role: 'assistant', content: `[Success Criteria]\n${perception.successCriteria.join('\n')}\n\n[Plan]\n${JSON.stringify(plan)}\n\n[Execution Result]\n${executionSummary}` },
     ];
 
-    tracker.trackPrompt(messages);
-    const response = await this.model.chat(messages);
+    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    tracker.trackPrompt(trimmedMessages);
+    const response = await this.model.chat(trimmedMessages);
     tracker.trackCompletion(response.content);
     return this.parseJson<Reflection>(response.content, this.emptyReflection());
   }
