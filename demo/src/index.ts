@@ -170,7 +170,7 @@ async function main() {
     model: process.env.OPENAI_MODEL ?? 'gpt-4o',
     temperature: 0.4,
     contextWindow: 128000,
-    timeoutMs: 0,
+    timeoutMs: 60000,
   });
 
   cron = new CronHubAdapter({
