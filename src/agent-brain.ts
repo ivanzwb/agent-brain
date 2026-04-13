@@ -82,6 +82,15 @@ export class AgentBrain {
     this.sandbox.addRules([
       { action: 'fs_list', pattern: '**', permission: 'ALLOW' as PermissionLevel },
       { action: 'fs_read', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'memory_query', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'memory_write', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'knowledge_query', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'knowledge_write', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'cron_query', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'cron_write', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'skill_exec', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'web_fetch', pattern: '**', permission: 'ALLOW' as PermissionLevel },
+      { action: 'web_search', pattern: '**', permission: 'ALLOW' as PermissionLevel },
     ]);
 
     this.memory = opts.memory;

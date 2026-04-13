@@ -1,11 +1,13 @@
 import { register } from 'module';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 import type { MemoryHub } from './memory-hub';
 import { MEMORY_TOOL_DEFINITIONS, CONVERSATION_TOOL_DEFINITIONS } from './memory-tool-definitions';
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 
 export class MemorySearchTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_search;
+  readonly actionCategory: ActionCategory = 'memory_query';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const query = args['query'] as string;
@@ -16,6 +18,7 @@ export class MemorySearchTool implements InnateTool {
 
 export class MemorySaveTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_save;
+  readonly actionCategory: ActionCategory = 'memory_write';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const key = args['key'] as string;
@@ -26,6 +29,7 @@ export class MemorySaveTool implements InnateTool {
 
 export class MemoryHistoryTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_history;
+  readonly actionCategory: ActionCategory = 'memory_query';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const limit = args['limit'] as number | undefined;
@@ -35,6 +39,7 @@ export class MemoryHistoryTool implements InnateTool {
 
 export class MemoryDeleteTool implements InnateTool {
   readonly definition: ToolDefinition = MEMORY_TOOL_DEFINITIONS.memory_delete;
+  readonly actionCategory: ActionCategory = 'memory_write';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;
@@ -44,6 +49,7 @@ export class MemoryDeleteTool implements InnateTool {
 
 export class ConversationTrackTool implements InnateTool {
   readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_track;
+  readonly actionCategory: ActionCategory = 'memory_write';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const conversationId = args['conversationId'] as string;
@@ -56,6 +62,7 @@ export class ConversationTrackTool implements InnateTool {
 
 export class ConversationSearchTool implements InnateTool {
   readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_search;
+  readonly actionCategory: ActionCategory = 'memory_query';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const query = args['query'] as string;
@@ -66,6 +73,7 @@ export class ConversationSearchTool implements InnateTool {
 
 export class ConversationHistoryTool implements InnateTool {
   readonly definition: ToolDefinition = CONVERSATION_TOOL_DEFINITIONS.conversation_history;
+  readonly actionCategory: ActionCategory = 'memory_query';
   constructor(private hub: MemoryHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const limit = args['limit'] as number | undefined;

@@ -1,4 +1,5 @@
 import type { InnateTool, ToolDefinition } from './types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 import { InnateToolHub } from './innate-tool-hub';
 
 /** Tool schema on `definition`; when to use: `fragments/ask-user-business.md`. */
@@ -17,6 +18,7 @@ export class AskUserTool implements InnateTool {
       required: ['question'],
     },
   };
+  readonly actionCategory: ActionCategory = 'user_interaction';
 
   constructor(private hub: InnateToolHub) {}
 

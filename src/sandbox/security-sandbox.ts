@@ -31,7 +31,14 @@ export type ActionCategory =
   | 'fs_list'      // list directory
   | 'web_fetch'    // HTTP requests
   | 'web_search'   // web search
+  | 'memory_query' // memory read operations (search, history)
+  | 'memory_write' // memory write operations (save, delete)
+  | 'knowledge_query' // knowledge read operations (list, search)
+  | 'knowledge_write' // knowledge write operations (add, delete)
+  | 'cron_query'   // cron read operations (list, status)
+  | 'cron_write'   // cron write operations (add, delete, pause, resume, run)
   | 'skill_exec'   // skill tool execution
+  | 'user_interaction' // ask_user tool
   ;
 
 export interface PermissionRule {

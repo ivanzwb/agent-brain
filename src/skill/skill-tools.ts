@@ -1,10 +1,12 @@
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 import type { SkillHub } from './skill-hub';
 import { SKILL_TOOL_DEFINITIONS } from './skill-tool-definitions';
 
 export class SkillFindTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_find;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const query = args['query'] as string;
@@ -14,6 +16,7 @@ export class SkillFindTool implements InnateTool {
 
 export class SkillListTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_list;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(_args: Record<string, unknown>): Promise<string> {
     return this.hub.skill_list();
@@ -22,6 +25,7 @@ export class SkillListTool implements InnateTool {
 
 export class SkillInstallTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_install;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const source = args['source'] as string;
@@ -31,6 +35,7 @@ export class SkillInstallTool implements InnateTool {
 
 export class SkillLoadMainTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_load_main;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
@@ -40,6 +45,7 @@ export class SkillLoadMainTool implements InnateTool {
 
 export class SkillLoadReferenceTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_load_reference;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
@@ -50,6 +56,7 @@ export class SkillLoadReferenceTool implements InnateTool {
 
 export class SkillListToolsTool implements InnateTool {
   readonly definition: ToolDefinition = SKILL_TOOL_DEFINITIONS.skill_list_tools;
+  readonly actionCategory: ActionCategory = 'skill_exec';
   constructor(private hub: SkillHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;

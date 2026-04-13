@@ -1,10 +1,12 @@
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 import type { CronHub } from './cron-hub';
 import { CRON_TOOL_DEFINITIONS } from './cron-tool-definitions';
 
 export class CronListTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_list;
+  readonly actionCategory: ActionCategory = 'cron_query';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const status = args['status'] as string | undefined;
@@ -15,6 +17,7 @@ export class CronListTool implements InnateTool {
 
 export class CronAddTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_add;
+  readonly actionCategory: ActionCategory = 'cron_write';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const name = args['name'] as string;
@@ -27,6 +30,7 @@ export class CronAddTool implements InnateTool {
 
 export class CronDeleteTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_delete;
+  readonly actionCategory: ActionCategory = 'cron_write';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;
@@ -36,6 +40,7 @@ export class CronDeleteTool implements InnateTool {
 
 export class CronPauseTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_pause;
+  readonly actionCategory: ActionCategory = 'cron_write';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;
@@ -45,6 +50,7 @@ export class CronPauseTool implements InnateTool {
 
 export class CronResumeTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_resume;
+  readonly actionCategory: ActionCategory = 'cron_write';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;
@@ -54,6 +60,7 @@ export class CronResumeTool implements InnateTool {
 
 export class CronRunNowTool implements InnateTool {
   readonly definition: ToolDefinition = CRON_TOOL_DEFINITIONS.cron_run_now;
+  readonly actionCategory: ActionCategory = 'cron_write';
   constructor(private hub: CronHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;

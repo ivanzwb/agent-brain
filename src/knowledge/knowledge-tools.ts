@@ -1,10 +1,12 @@
 import { InnateToolHub } from '../innate-tools/innate-tool-hub';
 import type { InnateTool, ToolDefinition } from '../innate-tools/types';
+import type { ActionCategory } from '../sandbox/security-sandbox';
 import type { KnowledgeHub } from './knowledge-hub';
 import { KNOWLEDGE_TOOL_DEFINITIONS } from './knowledge-tool-definitions';
 
 export class KnowledgeListTool implements InnateTool {
   readonly definition: ToolDefinition = KNOWLEDGE_TOOL_DEFINITIONS.knowledge_list;
+  readonly actionCategory: ActionCategory = 'knowledge_query';
   constructor(private hub: KnowledgeHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const source = args['source'] as string | undefined;
@@ -14,6 +16,7 @@ export class KnowledgeListTool implements InnateTool {
 
 export class KnowledgeAddTool implements InnateTool {
   readonly definition: ToolDefinition = KNOWLEDGE_TOOL_DEFINITIONS.knowledge_add;
+  readonly actionCategory: ActionCategory = 'knowledge_write';
   constructor(private hub: KnowledgeHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const source = args['source'] as string;
@@ -26,6 +29,7 @@ export class KnowledgeAddTool implements InnateTool {
 
 export class KnowledgeDeleteTool implements InnateTool {
   readonly definition: ToolDefinition = KNOWLEDGE_TOOL_DEFINITIONS.knowledge_delete;
+  readonly actionCategory: ActionCategory = 'knowledge_write';
   constructor(private hub: KnowledgeHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const id = args['id'] as string;
@@ -35,6 +39,7 @@ export class KnowledgeDeleteTool implements InnateTool {
 
 export class KnowledgeSearchTool implements InnateTool {
   readonly definition: ToolDefinition = KNOWLEDGE_TOOL_DEFINITIONS.knowledge_search;
+  readonly actionCategory: ActionCategory = 'knowledge_query';
   constructor(private hub: KnowledgeHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
     const query = args['query'] as string;
