@@ -4,7 +4,7 @@ import { IHub } from '../types';
  * MemoryHub — Unified memory management interface
  *
  * Provides two types of capabilities:
- * 1. Short-term memory: conversation message tracking, search, compression
+ * 1. Short-term memory: conversation message tracking and search
  * 2. Long-term memory: semantic search, save, list, delete
  */
 export interface MemoryHub extends IHub {
@@ -13,7 +13,7 @@ export interface MemoryHub extends IHub {
 
     /**
      * Track conversation messages and store in short-term memory
-     * @param conversationId Conversation ID (used to mark same conversation for later compression)
+     * @param conversationId Conversation ID (session / thread grouping)
      * @param role Message role: 'user' | 'assistant' | 'system'
      * @param content Message content
      */

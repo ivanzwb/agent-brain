@@ -58,7 +58,8 @@ const WEB_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 
   http_fetch_html: {
     name: 'http_fetch_html',
-    description: 'Fetch an HTML page and extract main content, links, and metadata.',
+    description:
+      'Fetch a page and extract readable text (and optionally links). For github.com repository URLs, uses the GitHub README API (raw Markdown) instead of scraping HTML.',
     parameters: {
       type: 'object',
       properties: {
@@ -135,6 +136,94 @@ const WEB_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
 };
 
 export { WEB_TOOL_DEFINITIONS };
+
+/**
+ * If `url` points at a normal GitHub repository page (not issues/wiki/blob/etc.),
+ * return owner and repo for the REST README endpoint.
+ */
+function tryParseGitHubRepoRootForReadme(urlStr: string): { owner: string; repo: string } | null {
+  let u: URL;
+  try {
+    u = new URL(urlStr.trim());
+  } catch {
+    return null;
+  }
+  const host = u.hostname.toLowerCase();
+  if (host !== 'github.com' && host !== 'www.github.com') return null;
+
+  const parts = u.pathname.split('/').filter(Boolean);
+  if (parts.length < 2) return null;
+
+  const owner = parts[0];
+  let repo = parts[1].replace(/\.git$/i, '');
+  if (!owner || !repo) return null;
+
+  if (parts.length === 2) {
+    return { owner, repo };
+  }
+
+  const third = parts[2].toLowerCase();
+  if (third === 'tree') {
+    return { owner, repo };
+  }
+  if (third === 'blob') {
+    return null;
+  }
+
+  const skip = new Set([
+    'issues',
+    'pulls',
+    'wiki',
+    'discussions',
+    'releases',
+    'actions',
+    'projects',
+    'packages',
+    'settings',
+    'compare',
+    'network',
+    'graphs',
+    'commits',
+    'tags',
+    'branches',
+    'stargazers',
+    'watchers',
+    'forks',
+    'search',
+  ]);
+  if (skip.has(third)) return null;
+
+  return null;
+}
+
+/** GET /repos/{owner}/{repo}/readme as raw Markdown (no token; subject to GitHub unauthenticated rate limits). */
+async function fetchGitHubReadmeMarkdown(
+  owner: string,
+  repo: string,
+  timeout: number,
+): Promise<{ ok: boolean; status: number; text: string; error?: string }> {
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`;
+  const result = await fetchUrl(apiUrl, {
+    method: 'GET',
+    timeout,
+    headers: {
+      Accept: 'application/vnd.github.raw+json',
+      'User-Agent': 'Mozilla/5.0 (compatible; agent-brain/1.0)',
+    },
+  });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      status: result.status,
+      text: '',
+      error: result.error ?? `HTTP ${result.status}`,
+    };
+  }
+
+  const text = typeof result.data === 'string' ? result.data : String(result.data);
+  return { ok: true, status: result.status, text };
+}
 
 async function fetchUrl(url: string, options: RequestInit & { timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: string; error?: string }> {
   const { timeout = 30000, ...fetchOptions } = options;
@@ -255,6 +344,20 @@ export class HttpFetchHtmlTool implements InnateTool {
     const extractLinks = args['extractLinks'] !== false;
     const extractImages = args['extractImages'] === true;
     const timeout = args['timeout'] as number || 30000;
+
+    const gh = tryParseGitHubRepoRootForReadme(url);
+    if (gh) {
+      const readme = await fetchGitHubReadmeMarkdown(gh.owner, gh.repo, timeout);
+      if (readme.ok && readme.text.trim().length > 0) {
+        const text = readme.text.length > 20000 ? `${readme.text.slice(0, 20000)}\n[... truncated]` : readme.text;
+        return JSON.stringify({
+          status: 'ok',
+          url,
+          source: 'github_readme_api',
+          text,
+        });
+      }
+    }
 
     const result = await fetchUrl(url, { method: 'GET', timeout, headers: { 'User-Agent': 'Mozilla/5.0' } });
 

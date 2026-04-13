@@ -201,7 +201,12 @@ export class ReactLoop {
       // ---- THOUGHT + (optional) ACTION ----
       let response: ModelResponse;
       try {
-        const trimmedMessages = budget.trimMessages(messages, budget.remaining(messages, allTools), 2, 4);
+        const trimmedMessages = await budget.trimMessages(
+          messages,
+          budget.remaining(messages, allTools),
+          2,
+          4,
+        );
         tracker.trackPrompt(trimmedMessages, allTools);
         response = await model.chat(trimmedMessages, allTools);
         tracker.trackCompletion(response.content);

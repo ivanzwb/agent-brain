@@ -40,6 +40,17 @@ export type {
 } from './prompts/prompt-system';
 export { clearPromptTemplateCache, interpolate, loadPrompt } from './prompts/load-prompt';
 
+export { PromptBudget, mergeConsecutiveSameRoleMessages } from './token/prompt-budget';
+export {
+  summarizeEvictedForMidTermBuffer,
+  summarizeMiddleMessages,
+} from './token/context-compression/short-term-workspace-compression';
+export { applySlidingWindowMiddle } from './token/context-compression/sliding-window-strategy';
+export {
+  scoreMessageImportance,
+  filterMiddleByImportance,
+} from './token/context-compression/importance-filter-strategy';
+
 // --- All types, enums & contracts ---
 export {
   // Enums

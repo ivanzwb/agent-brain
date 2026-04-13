@@ -64,6 +64,8 @@ export class AgentBrain {
   private readonly scheduler = new ThinkingModeScheduler();
   private readonly budget: PromptBudget;
   private readonly sandbox: SecuritySandbox;
+  /** Set for the duration of `run()`; used as `conversationId` for memory / session grouping. */
+  private activeConversationId?: string;
 
   constructor(opts: AgentBrainOptions) {
     this.config = resolveConfig(opts.config);
@@ -148,6 +150,7 @@ export class AgentBrain {
     const startTime = Date.now();
     const tracker = new TokenTracker(this.model);
 
+    this.activeConversationId = taskId;
     this.emit('task:start', { taskId, userInput, mode });
     await this.memory.conversation_track(taskId, 'user', userInput);
 
@@ -244,6 +247,8 @@ export class AgentBrain {
           plan: this.emptyPlan(),
         },
       });
+    } finally {
+      this.activeConversationId = undefined;
     }
   }
 
@@ -336,7 +341,7 @@ export class AgentBrain {
       { role: 'assistant', content: `[PERCEIVE result]\n${JSON.stringify(perception)}` },
     ];
 
-    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
     console.log('[REFLECT] messages:', JSON.stringify(trimmedMessages, null, 2));
     const response = await this.model.chat(trimmedMessages);
@@ -390,7 +395,7 @@ export class AgentBrain {
       });
     }
 
-    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
     const response = await this.model.chat(trimmedMessages);
     tracker.trackCompletion(response.content);
@@ -469,7 +474,7 @@ export class AgentBrain {
       { role: 'assistant', content: `[Success Criteria]\n${perception.successCriteria.join('\n')}\n\n[Plan]\n${JSON.stringify(plan)}\n\n[Execution Result]\n${executionSummary}` },
     ];
 
-    const trimmedMessages = this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
+    const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
     const response = await this.model.chat(trimmedMessages);
     tracker.trackCompletion(response.content);
