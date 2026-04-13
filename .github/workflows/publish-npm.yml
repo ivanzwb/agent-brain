@@ -1,9 +1,16 @@
 # Publishes this package to the npm registry when you push a version tag.
 #
-# Setup (one-time):
-# 1. npm: create an Automation token (or granular token with publish) at https://www.npmjs.com/settings/~/tokens
-# 2. GitHub repo → Settings → Secrets and variables → Actions → New repository secret:
-#    Name: NPM_TOKEN   Value: <your npm token>
+# Authentication: npm trusted publishing (OIDC) — no NPM_TOKEN secret.
+# Docs: https://docs.npmjs.com/trusted-publishers
+#
+# One-time on npmjs.com (package → Settings → Trusted publishing → GitHub Actions):
+# - Repository: same GitHub owner/repo as this workflow runs in.
+# - Workflow filename: publish.yml (exact; case-sensitive).
+# - package.json "repository.url" must match that repo exactly (see npm troubleshooting).
+#
+# Alternative: classic publish — add repository secret NPM_TOKEN and set on the Publish step:
+#   env:
+#     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 #
 # How to publish:
 # 1. Bump "version" in package.json (e.g. 0.2.0), commit.
@@ -22,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # required for npm trusted publishing (GitHub → npm OIDC)
 
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +37,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: https://registry.npmjs.org
           cache: npm
 
@@ -39,8 +47,8 @@ jobs:
       - name: Test
         run: npm test
 
-      # Scoped public package: --access public required. Add --provenance when using npm OIDC + id-token: write.
+      # Scoped public package: --access public required. npm uses OIDC when trusted publishing is configured.
       - name: Publish to npm
-        run: npm publish --access public
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
