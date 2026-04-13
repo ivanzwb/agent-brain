@@ -250,6 +250,10 @@ export class ReactLoop {
         if (sandboxResult) {
           observation = sandboxResult;
           console.log(`[Sandbox] denied:`, sandboxResult);
+          if (this.memory) {
+            await this.memory.conversation_track(this.conversationId!, 'assistant', `${call.name}: ${JSON.stringify(call.arguments)}`);
+            await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation}`);
+          }
           steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));
           messages.push({ role: 'tool', content: observation, toolCallId: call.id });
           eventPublisher?.publish('step:observation', { step: controller.currentStep, content: observation });
@@ -305,7 +309,7 @@ export class ReactLoop {
       // Track assistant's action and observation to conversation
       if (this.memory) {
         await this.memory.conversation_track(this.conversationId!, 'assistant', `${call.name}: ${JSON.stringify(call.arguments)}`);
-        await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation.substring(0, 500)}`);
+        await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation}`);
       }
 
       steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));
