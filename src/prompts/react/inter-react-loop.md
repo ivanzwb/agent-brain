@@ -9,9 +9,16 @@ You operate in a Thought → Action → Observation loop.
    - Consider whether you have enough information to complete the step.
 
 2. **Action**: Call exactly ONE tool to make progress.
-   - Choose the tool that best fits the current gap; obey its schema and description for arguments and limits.
-{{include:fragments/skill-tools.md}}
-{{include:fragments/recall-business.md}}
+   - Pick the tool by **business fit**; supply arguments **only** as defined in that tool’s attached definition (no invented parameters).
+{{include:fragments/ask-user-business.md}}
+{{include:fragments/file-business.md}}
+{{include:fragments/command-business.md}}
+{{include:fragments/web-business.md}}
+{{include:fragments/cron-business.md}}
+{{include:fragments/conversation-business.md}}
+{{include:fragments/memory-business.md}}
+{{include:fragments/knowledge-business.md}}
+{{include:fragments/skill-business.md}}
 
 3. **Observation**: You will receive the tool's output. Use it in your next Thought.
 

@@ -7,7 +7,15 @@ Your goal: Create a concrete execution plan.
 - Each step should be actionable (can be done with available tools or reasoning)
 - Identify dependencies between steps
 - Simple tasks may need just 1-2 steps; don't over-plan
-{{include:fragments/skill-tools.md}}
+{{include:fragments/ask-user-business.md}}
+{{include:fragments/file-business.md}}
+{{include:fragments/command-business.md}}
+{{include:fragments/web-business.md}}
+{{include:fragments/cron-business.md}}
+{{include:fragments/conversation-business.md}}
+{{include:fragments/memory-business.md}}
+{{include:fragments/knowledge-business.md}}
+{{include:fragments/skill-business.md}}
 
 **important**
 - Respond in JSON format ONLY. Do not include any other text.

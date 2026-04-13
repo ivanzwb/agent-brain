@@ -1,0 +1,7 @@
+> **Skill business (policy)**: **`skill_*`** tool definitions describe **capabilities and arguments**. This block is **when and in what order** to use skills—**not** a second copy of parameter specs.
+
+- **Priority**: For **external integrations** or **side-effecting** work (email, notifications, vendor APIs), prefer **skills** (installed or installable) over raw **http_*** / **web_***; use innate web tools as **fallback** only. If a skill is **required** and missing, **state that plainly**—do not imply success.
+- **Discovery flow**: **Local first** (**skill_list** + any **Installed Skills** context), then **remote discovery** (**skill_find**) if nothing fits. To onboard a package: **install → load main → list skill tools** before invoking package-specific tools. **Registry search ≠ local inventory**—never treat them as interchangeable.
+- **PLAN phase**: If a step uses **skill_find**, the **next** step should call **skill_install** for the chosen source when it is **not** yet local—map fields from tool outputs into the next call per schemas, without inventing names.
+- **ReAct loop**: Exactly **one** tool per assistant turn; a full skill setup may require **several turns** (find, then install, then load_main, etc.).
+- **Before “impossible”**: Do not claim an external capability is unavailable until **skill_list** shows no fit **and**, when a new package could help, **skill_find** has been tried. If both are exhausted, fall back per task policy and state limits clearly.

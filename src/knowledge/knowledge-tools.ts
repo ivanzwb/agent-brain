@@ -16,7 +16,7 @@ export class KnowledgeAddTool implements InnateTool {
   readonly definition: ToolDefinition = KNOWLEDGE_TOOL_DEFINITIONS.knowledge_add;
   constructor(private hub: KnowledgeHub) {}
   async execute(args: Record<string, unknown>): Promise<string> {
-    const source  = args['source '] as string;
+    const source = args['source'] as string;
     const title = args['title'] as string;
     const content = args['content'] as string;
     const metadata = args['metadata'] as Record<string, unknown> | undefined;

@@ -620,7 +620,7 @@ Within each PlanStep's ReAct loop:
 
 ### 4.2 Inner ReAct loop (prompt template)
 
-ReactLoop builds the PlanStep **system** prompt from the registered template `react/plan_step_system` (`src/prompts/react/plan-step-system.md`). That file expands `{{include:react/inter-react-loop.md}}`, which defines the Thought → Action → Observation rules (and pulls in skill / recall fragments). The opening line of the inner template is `[Inter ReAct loop]`.
+ReactLoop builds the PlanStep **system** prompt from the registered template `react/plan_step_system` (`src/prompts/react/plan-step-system.md`). That file expands `{{include:react/inter-react-loop.md}}`, which defines the Thought → Action → Observation rules (and pulls in conversation / memory / knowledge / skill business fragments). The opening line of the inner template is `[Inter ReAct loop]`.
 
 ### 4.3 Execution Context Injection
 

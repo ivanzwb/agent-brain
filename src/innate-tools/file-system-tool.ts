@@ -1,5 +1,6 @@
 import type { InnateTool, ToolDefinition } from './types';
 
+/** Capability boundaries in `FS_TOOL_DEFINITIONS`; usage / sequencing: `fragments/file-business.md`. */
 const FS_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   fs_read: {
     name: 'fs_read',

@@ -2,7 +2,7 @@ import { ToolDefinition } from '../innate-tools/types';
 
 /**
  * Conversation + long-term memory tool schemas: **capability boundaries** only.
- * When to prefer conversation vs memory vs ask_user: see `fragments/recall-business.md` in prompts.
+ * When to prefer conversation vs memory vs ask_user: `fragments/conversation-business.md`. **`memory_*` usage**: `fragments/memory-business.md`.
  */
 export const CONVERSATION_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   conversation_track: {

@@ -1,5 +1,6 @@
 import type { InnateTool, ToolDefinition } from './types';
 
+/** Capability boundaries in `WEB_TOOL_DEFINITIONS`; usage / sequencing: `fragments/web-business.md`. */
 const WEB_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   http_get: {
     name: 'http_get',

@@ -1,3 +1,5 @@
+import * as os from 'os';
+import * as path from 'path';
 import { CognitivePhase } from '../../src/types';
 import {
   COGNITIVE_PHASE_PROMPT_KEYWORD,
@@ -33,6 +35,30 @@ describe('prompt-system', () => {
 
     it('throws for unknown keyword or id', () => {
       expect(() => resolvePromptPath('no.such.template')).toThrow(/Unknown prompt keyword or id/);
+    });
+  });
+
+  describe('agent.system_base template', () => {
+    it('puts cwd label and newlines in the template; code passes path only', () => {
+      const out = renderPrompt('agent.system_base', {
+        systemPrompt: 'SYS',
+        workingDirectory: '/tmp/w',
+        guidance: 'G',
+        phasePrompt: 'P',
+      });
+      expect(out).toBe('SYS\nCurrent working directory: /tmp/w\n\nG\n\nP');
+    });
+
+    it('resolves default-style path from placeholder only', () => {
+      const defaultWs = path.join(os.tmpdir(), '.bios-agent');
+      const out = renderPrompt('agent.system_base', {
+        systemPrompt: 'SYS',
+        workingDirectory: defaultWs,
+        guidance: 'G',
+        phasePrompt: 'P',
+      });
+      expect(out).toContain(`Current working directory: ${defaultWs}`);
+      expect(out).toContain('G');
     });
   });
 
@@ -90,6 +116,7 @@ describe('prompt-system', () => {
     it('returns sorted unique categories', () => {
       const cats = listPromptCategories();
       expect(cats).toContain('cognitive');
+      expect(cats).toContain('agent');
       expect(cats).toEqual([...cats].sort());
     });
   });

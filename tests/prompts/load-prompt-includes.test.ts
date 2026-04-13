@@ -17,7 +17,39 @@ describe('load-prompt includes', () => {
   it('inlines fragment into cognitive.plan', () => {
     const text = loadPrompt('cognitive/plan.md');
     expect(text).toContain('PLAN phase');
+    expect(text).toContain('Filesystem business');
     expect(text).toContain('skill_find');
+    expect(text).toContain('Long-term memory policy');
+    expect(text).toContain('memory_search');
+    expect(text).toContain('Knowledge base policy');
+    expect(text).toContain('knowledge_search');
+    expect(text).toContain('Command-line business');
+    expect(text).toContain('Web / HTTP business');
+    expect(text).toContain('Cron jobs (business)');
+    expect(text).toContain('**ask_user (policy)**');
+    expect(text).toContain('Conversation policy');
+    expect(text).not.toMatch(/\{\{include:/);
+  });
+
+  it('inlines file-business into cognitive.execute', () => {
+    const text = loadPrompt('cognitive/execute.md');
+    expect(text).toContain('Filesystem business');
+    expect(text).toContain('Command-line business');
+    expect(text).toContain('Web / HTTP business');
+    expect(text).not.toMatch(/\{\{include:/);
+  });
+
+  it('inlines cron-business into cognitive.assess', () => {
+    const text = loadPrompt('cognitive/assess.md');
+    expect(text).toContain('Scheduled jobs');
+    expect(text).toContain('Cron jobs (business)');
+    expect(text).not.toMatch(/\{\{include:/);
+  });
+
+  it('inlines innate business fragments into inter-react-loop', () => {
+    const text = loadPrompt('react/inter-react-loop.md');
+    expect(text).toContain('Command-line business');
+    expect(text).toContain('Web / HTTP business');
     expect(text).not.toMatch(/\{\{include:/);
   });
 

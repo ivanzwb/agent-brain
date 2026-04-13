@@ -2,7 +2,7 @@ import { ToolDefinition } from '../innate-tools/types';
 
 /**
  * Skill tool schemas: **capability boundaries** (I/O, side effects, errors).
- * Priorities, task flow, and phrasing live in prompts (e.g. `fragments/skill-tools.md`).
+ * Priorities, task flow, and phrasing live in prompts (e.g. `fragments/skill-business.md`).
  */
 export const SKILL_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   skill_find: {

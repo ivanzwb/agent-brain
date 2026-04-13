@@ -2,6 +2,13 @@
   "version": 1,
   "templates": [
     {
+      "id": "agent.system_base",
+      "path": "agent/system-base.md",
+      "category": "agent",
+      "keywords": ["agent.system_base", "agent.system-base", "runtime.system_base"],
+      "description": "Layout for AgentBrain system messages (placeholders: systemPrompt, workingDirectory, guidance, phasePrompt); newlines and the cwd label live in the template file"
+    },
+    {
       "id": "cognitive.perceive",
       "path": "cognitive/perceive.md",
       "category": "cognitive",
@@ -44,13 +51,6 @@
       "description": "Inner ReAct loop: Thought → Action → Observation"
     },
     {
-      "id": "react.execute-step-assistant",
-      "path": "react/execute-step-assistant.md",
-      "category": "react",
-      "keywords": ["react.execute-step-assistant", "react.execute_step", "plan_step.assistant"],
-      "description": "Assistant message template for a single plan step (placeholders: strategy, stepId, stepDescription, expectedOutcome)"
-    },
-    {
       "id": "react.plan_step_system",
       "path": "react/plan-step-system.md",
       "category": "react",
@@ -58,18 +58,39 @@
       "description": "System prompt for PlanStep ReAct loop (placeholders: baseSystemPrompt, thinkingGuidance, planOverview, currentStepId, currentStepDescription, skillCatalogBlock, skillGapsBlock, memoryBlock)"
     },
     {
-      "id": "fragments.skill-tools",
-      "path": "fragments/skill-tools.md",
-      "category": "fragments",
-      "keywords": ["fragments.skill-tools", "skill.tools", "skill.tool.policy", "skill.tool.planning", "skill.tool.runtime"],
-      "description": "Skill business logic + style; {{include:fragments/skill-tools.md}}"
+      "id": "react.execute-step-assistant",
+      "path": "react/execute-step-assistant.md",
+      "category": "react",
+      "keywords": ["react.execute-step-assistant", "react.execute_step", "plan_step.assistant"],
+      "description": "Assistant message template for a single plan step (placeholders: strategy, stepId, stepDescription, expectedOutcome)"
     },
     {
-      "id": "fragments.recall-business",
-      "path": "fragments/recall-business.md",
+      "id": "fragments.skill-business",
+      "path": "fragments/skill-business.md",
       "category": "fragments",
-      "keywords": ["fragments.recall-business", "recall.business", "fragments.conversation-tool-runtime", "fragments.memory-tool-runtime", "conversation.tool.runtime", "memory.tool.runtime"],
-      "description": "Conversation vs memory recall policy; {{include:fragments/recall-business.md}}"
+      "keywords": ["fragments.skill-business", "skill.business", "skill.policy", "fragments.skill-tools", "skill.tools", "skill.tool.policy", "skill.tool.planning", "skill.tool.runtime"],
+      "description": "Skill tool business policy for prompts; {{include:fragments/skill-business.md}} (legacy keywords skill.tools / fragments.skill-tools still resolve here)"
+    },
+    {
+      "id": "fragments.file-business",
+      "path": "fragments/file-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.file-business", "file.business", "file.policy", "fs.business", "filesystem.policy"],
+      "description": "Sequencing and scope for innate fs_* (not parameter docs); {{include:fragments/file-business.md}}"
+    },
+    {
+      "id": "fragments.command-business",
+      "path": "fragments/command-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.command-business", "command.business", "cmd.policy", "shell.policy"],
+      "description": "How to use innate cmd_* (not schema docs); {{include:fragments/command-business.md}}"
+    },
+    {
+      "id": "fragments.web-business",
+      "path": "fragments/web-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.web-business", "web.business", "http.policy", "web.policy"],
+      "description": "How to use innate http_* / web_* (not schema docs); {{include:fragments/web-business.md}}"
     },
     {
       "id": "fragments.cron-scheduling",
@@ -77,6 +98,41 @@
       "category": "fragments",
       "keywords": ["fragments.cron-scheduling", "cron.scheduling"],
       "description": "Pre-flight resources before cron_add; {{include:fragments/cron-scheduling.md}}"
+    },
+    {
+      "id": "fragments.cron-business",
+      "path": "fragments/cron-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.cron-business", "cron.business", "cron.tools.policy"],
+      "description": "cron-scheduling + cron_* lifecycle; {{include:fragments/cron-business.md}}"
+    },
+    {
+      "id": "fragments.ask-user-business",
+      "path": "fragments/ask-user-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.ask-user-business", "ask_user.business", "ask_user.policy"],
+      "description": "When and how to use ask_user; {{include:fragments/ask-user-business.md}}"
+    },
+    {
+      "id": "fragments.conversation-business",
+      "path": "fragments/conversation-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.conversation-business", "conversation.business", "conversation.policy", "fragments.recall-business", "recall.business", "fragments.conversation-tool-runtime", "fragments.memory-tool-runtime", "conversation.tool.runtime", "memory.tool.runtime"],
+      "description": "Session conversation_* vs long-term memory_* routing; {{include:fragments/conversation-business.md}} (legacy keywords recall.business / fragments.recall-business still resolve here)"
+    },
+    {
+      "id": "fragments.memory-business",
+      "path": "fragments/memory-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.memory-business", "memory.usage", "memory.business", "memory.policy"],
+      "description": "memory_search vs memory_history; save/delete; vs conversation; {{include:fragments/memory-business.md}}"
+    },
+    {
+      "id": "fragments.knowledge-business",
+      "path": "fragments/knowledge-business.md",
+      "category": "fragments",
+      "keywords": ["fragments.knowledge-business", "knowledge.usage", "knowledge.business", "knowledge.policy"],
+      "description": "When to use knowledge_* vs memory/conversation; list vs search; mutating add/delete; {{include:fragments/knowledge-business.md}}"
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { ToolDefinition } from '../innate-tools/types';
 
 /**
- * Cron tool schemas: **capability boundaries**. When to offer scheduling is **agent / product policy** (prompts).
+ * Cron tool schemas: **capability boundaries**. Scheduling contract + lifecycle: `fragments/cron-business.md` (includes `cron-scheduling.md`).
  */
 const CRON_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   cron_list: {

@@ -1,5 +1,6 @@
 import type { InnateTool, ToolDefinition } from './types';
 
+/** Capability boundaries in `CMD_TOOL_DEFINITIONS`; usage / sequencing: `fragments/command-business.md`. */
 const CMD_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   cmd_exec: {
     name: 'cmd_exec',

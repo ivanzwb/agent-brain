@@ -1,6 +1,7 @@
 import type { InnateTool, ToolDefinition } from './types';
 import { InnateToolHub } from './innate-tool-hub';
 
+/** Tool schema on `definition`; when to use: `fragments/ask-user-business.md`. */
 export class AskUserTool implements InnateTool {
   readonly definition: ToolDefinition = {
     name: 'ask_user',

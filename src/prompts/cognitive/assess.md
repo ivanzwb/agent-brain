@@ -5,14 +5,14 @@ Step 1 — What does the task NEED?
 - List the key skill categories required (e.g., "summarization", "financial analysis", "web scraping", "scheduled automation", "outbound communication (email / notifications)").
 
 Step 2 — What do you HAVE?
-- Use the Resource Overview below: innate tools (e.g., cron_*, http_get, http_post, web_search, web_scrape) and installed skills.
+- Use the **Resource Overview** below: innate tools (names and limits appear there—do not assume tools that are not listed) and installed skills.
 - Map these resources to the required skill categories.
 
 Step 3 — Gaps & risks
-{{include:fragments/cron-scheduling.md}}
+{{include:fragments/cron-business.md}}
 - Which skill categories are covered (matchedSkillCategories)?
 - Which skill categories remain uncovered (missingSkillCategories)? Only mark as missing when neither skills nor innate tools can reasonably support them.
-- Remember: skill acquisition tools (skill_find, skill_install, skill_load_main, skill_list_tools) are also innate capabilities — if a gap can likely be covered by installing a skill (for example, sending emails, calling external APIs, or other integrations), record this and treat it as "can be filled by acquiring a skill" rather than "impossible".
+- Remember: **skill acquisition** (registry search, install, load, list tools—see tool list) is itself an innate capability. If a gap can likely be covered by **adding a skill** (e.g. email, vendor APIs), record it as **fillable via skill acquisition**, not “impossible”.
 - Summarize overall complexity and the main risks.
 
 **important**

@@ -35,6 +35,7 @@ import {
   runDeliberateStrategy,
 } from './strategy';
 import { type CognitiveOps } from './strategy/types';
+import { renderPrompt } from './prompts/prompt-system';
 
 function generateTaskId(): string {
   const ts = Date.now().toString(36);
@@ -99,12 +100,12 @@ export class AgentBrain {
   }
 
   private buildSystemBase(guidance: string, phasePrompt: string): string {
-    const parts = [this.config.systemPrompt];
-    if (this.config.workingDirectory) {
-      parts.push(`Current working directory: ${this.config.workingDirectory}`);
-    }
-    parts.push('', guidance, '', phasePrompt);
-    return parts.join('\n');
+    return renderPrompt('agent.system_base', {
+      systemPrompt: this.config.systemPrompt,
+      workingDirectory: this.sandbox.workingDirectory,
+      guidance,
+      phasePrompt,
+    });
   }
 
   /**

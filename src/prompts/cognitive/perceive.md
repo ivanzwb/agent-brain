@@ -18,5 +18,3 @@ Your goal: Deeply understand the task and classify its complexity before doing a
 **Important**
 - Respond in JSON format ONLY. Do not include any other text.
 - Response format example: {"surfaceRequest":"...","deepIntent":"...","constraints":[],"ambiguities":[],"successCriteria":[],"complexity":{"level":"simple","estimatedSteps":1,"confidence":0.9,"uncertainties":[],"recommendedLevels":["instinct"],"isPatternRecognizable":true,"requiresVerification":false},"thinkingLevel":"instinct","fastPlan":{"strategy":"...","steps":[{"id":"s1","description":"...","dependsOn":[]}],"expectedOutcome":"..."}}
-
-Note: complexity.level is "simple"|"moderate"|"complex". estimatedSteps is number. recommendedLevels is array ["instinct"|"analytical"|"deliberate"].
