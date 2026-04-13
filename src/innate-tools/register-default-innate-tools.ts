@@ -11,33 +11,10 @@ import {
 import {
   registerSkillTools,
 } from '../skill/skill-tools';
+import { registerFileSystemTools } from './file-system-tool';
+import { registerCommandTools } from './command-tool';
+import { registerWebTools } from './web-tool';
 import { AskUserTool } from './ask-user-tool';
-import {
-  FSReadTool,
-  FSWriteTool,
-  FSEditTool,
-  FSDeleteTool,
-  FSListTool,
-  FSMkdirTool,
-  FSExistsTool,
-  FSStatTool,
-  FSSearchTool,
-  FSGrepTool,
-} from './file-system-tool';
-import {
-  CmdExecTool,
-  CmdRunTool,
-  CmdKillTool,
-  CmdBgTool,
-  CmdListTool,
-} from './command-tool';
-import {
-  HttpGetTool,
-  HttpPostTool,
-  HttpFetchHtmlTool,
-  WebSearchTool,
-  WebScrapeTool,
-} from './web-tool';
 import {
   registerCronTools,
 } from '../cron/cron-tools';
@@ -59,28 +36,9 @@ export function registerDefaultInnateTools(
   ctx: RegisterDefaultInnateToolsContext,
 ): void {
   
-  hub.register(new FSReadTool());
-  hub.register(new FSWriteTool());
-  hub.register(new FSEditTool());
-  hub.register(new FSDeleteTool());
-  hub.register(new FSListTool());
-  hub.register(new FSMkdirTool());
-  hub.register(new FSExistsTool());
-  hub.register(new FSStatTool());
-  hub.register(new FSSearchTool());
-  hub.register(new FSGrepTool());
-  
-  hub.register(new CmdExecTool());
-  hub.register(new CmdRunTool());
-  hub.register(new CmdKillTool());
-  hub.register(new CmdBgTool());
-  hub.register(new CmdListTool());
-  
-  hub.register(new HttpGetTool());
-  hub.register(new HttpPostTool());
-  hub.register(new HttpFetchHtmlTool());
-  hub.register(new WebSearchTool());
-  hub.register(new WebScrapeTool());
+  registerFileSystemTools(hub);
+  registerCommandTools(hub);
+  registerWebTools(hub);
   
   hub.register(new AskUserTool(hub));
 

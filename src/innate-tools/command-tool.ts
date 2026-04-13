@@ -1,4 +1,5 @@
 import type { InnateTool, ToolDefinition } from './types';
+import { InnateToolHub } from './innate-tool-hub';
 
 /** Capability boundaries in `CMD_TOOL_DEFINITIONS`; usage / sequencing: `fragments/command-business.md`. */
 const CMD_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
@@ -305,4 +306,12 @@ export class CmdListTool implements InnateTool {
       processes,
     });
   }
+}
+
+export function registerCommandTools(hub: InnateToolHub): void {
+  hub.register(new CmdExecTool());
+  hub.register(new CmdRunTool());
+  hub.register(new CmdKillTool());
+  hub.register(new CmdBgTool());
+  hub.register(new CmdListTool());
 }

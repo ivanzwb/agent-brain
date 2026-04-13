@@ -4,5 +4,6 @@
 - **Discover before you widen**: Start with **small, shallow** exploration; only expand to **deep listing or whole-tree** search when a narrow pass did not answer the question—large outputs waste context and hide signal.
 - **Inspect before you mutate**: When editing or replacing matters, **confirm what is on disk** (structure, size, or a targeted slice) before **overwrite, delete, or bulk line changes**—do not assume contents from memory alone.
 - **Prefer minimal edits**: When the goal is a **localized fix**, use the **smallest change surface** the task allows; use **whole-file replacement** mainly for **new** files or when the user explicitly wants a full rewrite.
+- **Rename with care**: Use **`fs_rename`** to move or rename files/directories; check that **destination doesn't exist** before attempting—failed rename returns error, successful rename returns old/new paths.
 - **Search order**: If you only need **where something lives**, narrow by **name / path** first; use **content-wide** search when you need **matches inside files**, and **tighten roots and filters** so scans stay bounded.
-- **Destructive caution**: Treat **delete** and **recursive cleanup** as **irreversible** unless the host says otherwise; do not remove paths “to be helpful” without clear instruction.
+- **Destructive caution**: Treat **delete** and **recursive cleanup** as **irreversible** unless the host says otherwise; do not remove paths "to be helpful" without clear instruction.

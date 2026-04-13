@@ -1,4 +1,5 @@
 import type { InnateTool, ToolDefinition } from './types';
+import { InnateToolHub } from './innate-tool-hub';
 
 /** Capability boundaries in `WEB_TOOL_DEFINITIONS`; usage / sequencing: `fragments/web-business.md`. */
 const WEB_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
@@ -562,4 +563,12 @@ export class WebScrapeTool implements InnateTool {
       data,
     });
   }
+}
+
+export function registerWebTools(hub: InnateToolHub): void {
+  hub.register(new HttpGetTool());
+  hub.register(new HttpPostTool());
+  hub.register(new HttpFetchHtmlTool());
+  hub.register(new WebSearchTool());
+  hub.register(new WebScrapeTool());
 }

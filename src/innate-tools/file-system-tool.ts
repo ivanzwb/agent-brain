@@ -1,4 +1,5 @@
 import type { InnateTool, ToolDefinition } from './types';
+import { InnateToolHub } from './innate-tool-hub';
 
 /** Capability boundaries in `FS_TOOL_DEFINITIONS`; usage / sequencing: `fragments/file-business.md`. */
 const FS_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
@@ -113,6 +114,26 @@ const FS_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
         },
       },
       required: ['path'],
+      additionalProperties: false,
+    },
+  },
+
+  fs_rename: {
+    name: 'fs_rename',
+    description: 'Rename or move a file or directory. Can also move files between directories.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Absolute or relative path to the file or directory to rename',
+        },
+        newPath: {
+          type: 'string',
+          description: 'New name (for rename) or destination path (for move)',
+        },
+      },
+      required: ['path', 'newPath'],
       additionalProperties: false,
     },
   },
@@ -426,6 +447,43 @@ export class FSDeleteTool implements InnateTool {
   }
 }
 
+export class FSRenameTool implements InnateTool {
+  readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_rename;
+  readonly actionCategory = 'fs_write' as const;
+  readonly permissionTargetArgs = ['path'];
+
+  async execute(args: Record<string, unknown>): Promise<string> {
+    const path = args['path'] as string;
+    const newPath = args['newPath'] as string;
+
+    const fs = await import('fs/promises');
+
+    // Check if source exists
+    const stat = await fs.stat(path);
+
+    // Check if destination already exists
+    try {
+      await fs.stat(newPath);
+      return JSON.stringify({
+        status: 'error',
+        message: `Destination path "${newPath}" already exists`,
+      });
+    } catch {
+      // Destination doesn't exist, good
+    }
+
+    // Perform rename/move
+    await fs.rename(path, newPath);
+
+    return JSON.stringify({
+      status: 'ok',
+      oldPath: path,
+      newPath,
+      type: stat.isDirectory() ? 'directory' : 'file',
+    });
+  }
+}
+
 export class FSListTool implements InnateTool {
   readonly definition: ToolDefinition = FS_TOOL_DEFINITIONS.fs_list;
   readonly actionCategory = 'fs_list' as const;
@@ -682,4 +740,18 @@ export class FSGrepTool implements InnateTool {
       results,
     });
   }
+}
+
+export function registerFileSystemTools(hub: InnateToolHub): void {
+  hub.register(new FSReadTool());
+  hub.register(new FSWriteTool());
+  hub.register(new FSEditTool());
+  hub.register(new FSDeleteTool());
+  hub.register(new FSRenameTool());
+  hub.register(new FSListTool());
+  hub.register(new FSMkdirTool());
+  hub.register(new FSExistsTool());
+  hub.register(new FSStatTool());
+  hub.register(new FSSearchTool());
+  hub.register(new FSGrepTool());
 }
