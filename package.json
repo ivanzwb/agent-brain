@@ -1,6 +1,6 @@
 {
   "name": "@biosbot/agent-brain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agentic AI framework with five-phase cognitive cycle (PERCEIVE→ASSESS→PLAN→EXECUTE→REFLECT), nested ReAct loops, dynamic skill acquisition, four thinking modes, token budget management, and memory-augmented execution for building autonomous LLM agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
