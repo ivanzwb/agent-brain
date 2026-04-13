@@ -1,0 +1,46 @@
+# Publishes this package to the npm registry when you push a version tag.
+#
+# Setup (one-time):
+# 1. npm: create an Automation token (or granular token with publish) at https://www.npmjs.com/settings/~/tokens
+# 2. GitHub repo → Settings → Secrets and variables → Actions → New repository secret:
+#    Name: NPM_TOKEN   Value: <your npm token>
+#
+# How to publish:
+# 1. Bump "version" in package.json (e.g. 0.2.0), commit.
+# 2. git tag v0.2.0 && git push origin v0.2.0
+#    Tag must match semver with leading v: v*
+
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # Scoped public package: --access public required. Add --provenance when using npm OIDC + id-token: write.
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
