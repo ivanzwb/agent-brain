@@ -55,7 +55,7 @@ export enum TaskStatus {
 }
 
 export enum ExecutionMode {
-  /** Auto mode: complexity is determined by PERCEIVE phase (default) */
+  /** Auto: default is execute after PERCEIVE; plan-without-execute only if perception sets `userWantsPlanOnly` */
   AUTO = 'auto',
   /** Think only: PERCEIVE + ASSESS (no execution) */
   THINK = 'think',
@@ -176,6 +176,11 @@ export interface Perception {
   thinkingLevel: ThinkingLevel;
   /** For simple/instinct tasks: a ready-to-execute single-step plan */
   fastPlan?: Plan;
+  /**
+   * True only when the user clearly asked for a plan/outline/decomposition **without**
+   * running tools (e.g. for a lead agent to delegate). Omitted or false ⇒ normal runs should execute.
+   */
+  userWantsPlanOnly?: boolean;
 }
 
 /** ASSESS phase output: self-capability assessment */

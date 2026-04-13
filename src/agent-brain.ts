@@ -134,7 +134,7 @@ export class AgentBrain {
       conversationId?: string;
       /**
        * Execution mode (default: `auto`):
-       * - `auto`: derived from perception.complexity (simple→execute, moderate→plan, complex→full)
+       * - `auto`: **execute** after planning for typical tasks; **plan-without-execute** only when `perception.userWantsPlanOnly` is true. Heavier `complex` + `deliberate` (and similar) → `full`.
        * - `think`: PERCEIVE + ASSESS only
        * - `plan`: PERCEIVE + ASSESS + PLAN
        * - `execute`: PERCEIVE + ASSESS + PLAN + EXECUTE
@@ -177,15 +177,22 @@ export class AgentBrain {
       // ---- Resolve mode from complexity when AUTO ----
       let resolvedMode = mode;
       if (mode === ExecutionMode.AUTO) {
-        const level = perception.complexity.level;
-        if (perception.complexity.isPatternRecognizable) {
-          resolvedMode = ExecutionMode.EXECUTE;
-        } else if (level === 'simple' || perception.thinkingLevel === ThinkingLevel.INSTINCT) {
-          resolvedMode = ExecutionMode.EXECUTE;
-        } else if (level === 'moderate' || perception.thinkingLevel === ThinkingLevel.ANALYTICAL) {
+        if (perception.userWantsPlanOnly === true) {
           resolvedMode = ExecutionMode.PLAN;
         } else {
-          resolvedMode = ExecutionMode.FULL;
+          const level = perception.complexity.level;
+          const tl = perception.thinkingLevel;
+          if (
+            perception.complexity.isPatternRecognizable ||
+            level === 'simple' ||
+            level === 'moderate' ||
+            tl === ThinkingLevel.INSTINCT ||
+            tl === ThinkingLevel.ANALYTICAL
+          ) {
+            resolvedMode = ExecutionMode.EXECUTE;
+          } else {
+            resolvedMode = ExecutionMode.FULL;
+          }
         }
       }
 
