@@ -111,11 +111,21 @@ export class AgentBrain {
   }
 
   private buildSystemBase(guidance: string, phasePrompt: string): string {
+    const innateTools: string = this.innateToolHub.getToolsDescription().join(', \n')?? '(none)';
+    const skillSummaries: string = this.skillHub.getSkillsDescription().join('\n\n')?? '(none)';
+
+    // Move formatting to the prompt template system
+    const resourceOverview = renderPrompt('agent.resource_overview', {
+      innateTools,
+      skillSummaries,
+    });
+
     return renderPrompt('agent.system_base', {
       systemPrompt: this.config.systemPrompt,
       workingDirectory: this.sandbox.workingDirectory,
       guidance,
       phasePrompt,
+      resourceOverview
     });
   }
 
@@ -325,25 +335,8 @@ export class AgentBrain {
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
 
-    // Innate tools
-    const innateTools: string[] = this.innateToolHub.getToolsDescription();
-    // Pre-installed skill packages
-    const skillSummaries: string[] = this.skillHub.getSkillsDescription();
-
-    const parts: string[] = [];
-    if (innateTools.length > 0) {
-      parts.push(`Innate tools (usable directly): ${innateTools.join(', \n')}`);
-    }
-    if (skillSummaries.length > 0) {
-      parts.push(`Available skills:\n${skillSummaries.join('\n\n')}`);
-    }
-    if (parts.length === 0) {
-      parts.push('No tools or skills available.');
-    }
-    const resourceOverview = parts.join('\n\n');
-
     const messages: Message[] = [
-      { role: 'system', content: `${this.buildSystemBase(guidance, phasePrompt)}\n\n${resourceOverview}` },
+      { role: 'system', content: `${this.buildSystemBase(guidance, phasePrompt)}` },
       { role: 'user', content: userInput },
       { role: 'assistant', content: `[PERCEIVE result]\n${JSON.stringify(perception)}` },
     ];
@@ -371,17 +364,11 @@ export class AgentBrain {
     const phase = CognitivePhase.PLAN;
     const guidance = this.scheduler.generateGuidance(phase);
     const phasePrompt = this.scheduler.getPhasePrompt(phase);
-    // Expose installed skills to the planner so it can prefer reusing them
-    const skillSummaries: string[] = this.skillHub.getSkillsDescription();
-    const installedSkillsText =
-      skillSummaries.length > 0
-        ? `\n\n[Installed Skills]\n${skillSummaries.map((s) => `  - ${s}`).join('\n')}`
-        : '';
 
     const messages: Message[] = [
       {
         role: 'system',
-        content: `${this.buildSystemBase(guidance, phasePrompt)}${installedSkillsText}`,
+        content: `${this.buildSystemBase(guidance, phasePrompt)}`,
       },
       { role: 'user', content: userInput },
     ];

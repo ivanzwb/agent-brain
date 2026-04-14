@@ -121,16 +121,30 @@ export class SkillHubAdapter implements SkillHub {
     }
   }
 
-  async execute(skillName: string, toolName: string, _args: Record<string, unknown>): Promise<string> {
+  async execute(skillName: string, toolName: string, args: Record<string, unknown>): Promise<string> {
     const tools = this.sf.listTools(skillName);
     const tool = tools.find(t => t.name === toolName);
     if (!tool) {
       throw new Error(`Skill "${skillName}" has no tool "${toolName}"`);
     }
-    return JSON.stringify({
-      message: `Tool "${toolName}" from skill "${skillName}" is declared but script execution is not yet available.`,
-      tool,
+
+    const { stdout, stderr, exitCode } = await this.sf.runScript({
+      name: skillName,
+      toolName,
+      args: JSON.stringify(args ?? {}),
     });
+
+    const output = String(stdout ?? '').trim();
+    if (output) return output;
+
+    const err = String(stderr ?? '').trim();
+    if (exitCode !== 0 || err) {
+      throw new Error(
+        `Skill script failed (${skillName}.${toolName}) exit=${exitCode}: ${err || 'no stderr'}`,
+      );
+    }
+
+    throw new Error(`Skill "${skillName}" tool "${toolName}" returned no output`);
   }
 
   private toToolDefinition(decl: ToolDeclaration): ToolDefinition {

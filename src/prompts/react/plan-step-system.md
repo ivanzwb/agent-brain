@@ -8,6 +8,7 @@
 
 [Current Step]
 Step {{currentStepId}}: {{currentStepDescription}}
-You are executing ONLY this step. Do not proceed to the next step.{{skillCatalogBlock}}{{skillGapsBlock}}
+You are executing ONLY this step. Do not proceed to the next step.
+{{skillGapsBlock}}
 
 {{memoryBlock}}

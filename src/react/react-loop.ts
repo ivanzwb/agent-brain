@@ -404,7 +404,6 @@ export class ReactLoop {
       thinkingGuidance: ctx.thinkingGuidance,
       planOverview,
       currentStep: { id: planStep.id, description: planStep.description },
-      skillCatalogText: this.buildSkillCatalogText(),
       skillGapsText: this.formatSkillGapsText(ctx.assessment),
       memoryText,
     });
@@ -430,19 +429,6 @@ export class ReactLoop {
       stepDescription: planStep.description,
       expectedOutcome: plan.expectedOutcome,
     });
-  }
-
-  /**
-   * Build catalog text of installed skills.
-   */
-  private buildSkillCatalogText(): string {
-    const descriptions = this.skillHub.getSkillsDescription();
-    if (descriptions.length === 0) return '';
-    const lines: string[] = ['[Installed Skills]'];
-    for (const desc of descriptions) {
-      lines.push(`  - ${desc}`);
-    }
-    return lines.join('\n');
   }
 
   private logStep(

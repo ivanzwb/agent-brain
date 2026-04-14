@@ -9,6 +9,13 @@
       "description": "Layout for AgentBrain system messages (placeholders: systemPrompt, workingDirectory, guidance, phasePrompt); newlines and the cwd label live in the template file"
     },
     {
+      "id": "agent.resource_overview",
+      "path": "agent/resource-overview.md",
+      "category": "agent",
+      "keywords": ["agent.resource-overview", "agent.resource_overview", "runtime.resource_overview"],
+      "description": "Summary of available resources for the agent (placeholders: innateTools, skillSummaries)"
+    },
+    {
       "id": "cognitive.perceive",
       "path": "cognitive/perceive.md",
       "category": "cognitive",

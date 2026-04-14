@@ -1,5 +1,6 @@
 import type { InnateTool, ToolDefinition } from './types';
 import { InnateToolHub } from './innate-tool-hub';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 /** Capability boundaries in `WEB_TOOL_DEFINITIONS`; usage / sequencing: `fragments/web-business.md`. */
 const WEB_TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
@@ -226,41 +227,71 @@ async function fetchGitHubReadmeMarkdown(
   return { ok: true, status: result.status, text };
 }
 
-async function fetchUrl(url: string, options: RequestInit & { timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: string; error?: string }> {
-  const { timeout = 30000, ...fetchOptions } = options;
+function getProxyUrl(targetUrl: string): string | undefined {
+  const isHttps = targetUrl.startsWith('https:');
+  return (isHttps ? process.env.HTTPS_PROXY : process.env.HTTP_PROXY)
+    ?? process.env.HTTPS_PROXY
+    ?? process.env.HTTP_PROXY
+    ?? undefined;
+}
+
+async function doFetch(
+  url: string,
+  fetchOptions: RequestInit,
+  timeout: number,
+  useProxy: boolean,
+): Promise<{ ok: boolean; status: number; data: string; error?: string }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const opts: any = {
+    ...fetchOptions,
+    signal: controller.signal,
+  };
+
+  if (useProxy) {
+    const proxyUrl = getProxyUrl(url);
+    if (proxyUrl) {
+      opts.dispatcher = new HttpsProxyAgent(proxyUrl);
+    }
+  }
+
   try {
-    const response = await fetch(url, {
-      ...fetchOptions,
-      signal: controller.signal,
-    });
+    const response = await fetch(url, opts as RequestInit);
     clearTimeout(timeoutId);
 
     const contentType = response.headers.get('content-type') || '';
     let data: any;
-
     if (contentType.includes('application/json')) {
       data = await response.json();
     } else {
       data = await response.text();
     }
-
-    return {
-      ok: response.ok,
-      status: response.status,
-      data,
-    };
+    return { ok: response.ok, status: response.status, data };
   } catch (err: any) {
     clearTimeout(timeoutId);
-    return {
-      ok: false,
-      status: 0,
-      data: '',
-      error: err.message || 'Fetch failed',
-    };
+    return { ok: false, status: 0, data: '', error: err.message || 'Fetch failed' };
   }
+}
+
+async function fetchUrl(url: string, options: RequestInit & { timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: string; error?: string }> {
+  const { timeout = 30000, ...fetchOptions } = options;
+
+  // First attempt: direct connection
+  const direct = await doFetch(url, fetchOptions, timeout, false);
+  if (direct.ok || direct.status > 0) {
+    return direct;
+  }
+
+  // Fallback: retry via proxy if configured
+  const proxyUrl = getProxyUrl(url);
+  if (proxyUrl) {
+    console.log(`[fetchUrl] direct failed (${direct.error}), retrying via proxy ${proxyUrl}`);
+    return doFetch(url, fetchOptions, timeout, true);
+  }
+
+  return direct;
 }
 
 export class HttpGetTool implements InnateTool {

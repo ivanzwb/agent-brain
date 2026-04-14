@@ -13,8 +13,6 @@ export function buildPlanStepSystemPrompt(params: {
   planOverview: string;
   /** Current step ID and description */
   currentStep: { id: string; description: string };
-  /** Skill catalog text (may be empty) */
-  skillCatalogText: string;
   /** Skill gaps hint (may be empty) */
   skillGapsText: string;
   /** Memory context (may be empty) */
@@ -25,12 +23,11 @@ export function buildPlanStepSystemPrompt(params: {
     thinkingGuidance,
     planOverview,
     currentStep,
-    skillCatalogText,
     skillGapsText,
     memoryText,
   } = params;
 
-  const skillCatalogBlock = skillCatalogText ? `\n\n${skillCatalogText}` : '';
+
   const skillGapsBlock = skillGapsText ? `\n\n${skillGapsText}` : '';
   const memoryBlock = memoryText ? `\n\n[Context from Memory]\n${memoryText}` : '';
 
@@ -40,7 +37,6 @@ export function buildPlanStepSystemPrompt(params: {
     planOverview,
     currentStepId: currentStep.id,
     currentStepDescription: currentStep.description,
-    skillCatalogBlock,
     skillGapsBlock,
     memoryBlock,
   });
