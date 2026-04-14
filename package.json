@@ -13,7 +13,8 @@
     "clean": "rimraf dist",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "demo": "npx ts-node demo/src/index.ts",
+    "cli": "npx ts-node demo/src/cli.ts",
+    "web": "npx ts-node demo/src/web/server.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -77,9 +78,12 @@
     "openai": "^6.33.0"
   },
   "devDependencies": {
-    "@biosbot/agent-memory": "^0.1.4",
-    "@biosbot/agent-skills": "^0.1.3",
+    "@biosbot/agent-memory": "^0.1.5",
+    "@biosbot/agent-skills": "^0.1.4",
+    "@types/express": "^5.0.0",
+    "commander": "^13.1.0",
     "dotenv": "^16.4.0",
+    "express": "^5.1.0",
     "cron-parser": "^5.5.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.39",

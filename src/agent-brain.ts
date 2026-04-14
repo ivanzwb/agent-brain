@@ -141,8 +141,6 @@ export class AgentBrain {
   async run(
     userInput: string,
     options?: {
-      /** Stable id for memory / conversation grouping (e.g. per cron job). */
-      conversationId?: string;
       /**
        * Execution mode (default: `auto`):
        * - `auto`: **execute** after planning for typical tasks; **plan-without-execute** only when `perception.userWantsPlanOnly` is true. Heavier `complex` + `deliberate` (and similar) → `full`.
@@ -154,7 +152,7 @@ export class AgentBrain {
       mode?: ExecutionMode;
     },
   ): Promise<TaskResult> {
-    const taskId = options?.conversationId ?? generateTaskId();
+    const taskId = generateTaskId();
     const mode = options?.mode ?? ExecutionMode.AUTO;
     const startTime = Date.now();
     const tracker = new TokenTracker(this.model);

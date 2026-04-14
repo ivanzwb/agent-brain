@@ -70,6 +70,8 @@ export interface PermissionDecision {
  *
  * For custom behavior, **subclass** and override only {@link askPermission}.
  * Use {@link resolvePath} from overrides when normalizing paths.
+ *
+ * The innate **`ask_user`** tool is always allowed here (it is the user-prompt channel itself, not a guarded side effect).
  */
 export class SecuritySandbox {
   private readonly rules: PermissionRule[] = [];
@@ -78,7 +80,7 @@ export class SecuritySandbox {
 
   /**
    * Built-in rule sandbox: no rules until added via {@link addRule} / {@link addRules}
-   * (subclass or host wrapper). When no rule matches, permission is always **ASK**.
+   * (subclass or host wrapper). When no rule matches, permission is always **ASK** (except `ask_user`, which is never gated).
    *
    * @param innateToolHub Hub to prompt the user for permission via `requestUserInput`.
    * @param workingDirectory Resolved working directory for tools; defaults to `os.tmpdir()/.bios-agent`.
@@ -219,6 +221,11 @@ export class SecuritySandbox {
     permissionTarget: string,
     args: Record<string, unknown>,
   ): Promise<string | undefined> {
+    /** ask_user is the permission UX itself; it must not go through sandbox ASK → nested ask. */
+    if (toolName === 'ask_user') {
+      return undefined;
+    }
+
     const resolvedTarget = action.startsWith('fs_')
       ? this.resolvePath(permissionTarget)
       : permissionTarget;

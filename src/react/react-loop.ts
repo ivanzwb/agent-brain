@@ -246,7 +246,8 @@ export class ReactLoop {
       let observation: string;
       const innateTool = this.innateToolHub.getRegisteredTool(call.name);
       const skipSandbox =
-        innateTool != null && innateTool.actionCategory === undefined;
+        innateTool != null &&
+        (innateTool.actionCategory === undefined || call.name === 'ask_user');
 
       if (this.sandbox && !skipSandbox) {
         const sandboxResult = await this.checkSandboxPermission(call.name, call.arguments);
@@ -275,7 +276,7 @@ export class ReactLoop {
               (typeof q === 'string' ? q : '(tool)') + ' -> ' + observation;
             await this.memory.conversation_track(this.conversationId!, 'user', userResponse);
           }
-          if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
+          else if (call.name === 'skill_load_main' || call.name === 'skill_load_reference') {
             const loaded =
               (typeof call.arguments['skillName'] === 'string' && call.arguments['skillName']) ||
               (typeof call.arguments['name'] === 'string' && call.arguments['name']) ||
@@ -300,19 +301,17 @@ export class ReactLoop {
             });
           } else {
             observation = await this.skillHub.execute(skillName, toolName, call.arguments);
-            console.log(`[Tool] ${call.name} result:`, observation.substring(0, 500));
+            // Track assistant's action and observation to conversation
+            if (this.memory) {
+              await this.memory.conversation_track(this.conversationId!, 'assistant', `${call.name}: ${JSON.stringify(call.arguments)}`);
+              await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation}`);
+            }
           }
         } catch (err) {
           controller.recordFailure();
           observation = `[Error] Tool execution failed: ${String(err)}`;
           console.log(`[Tool] ${call.name} error:`, String(err));
         }
-      }
-
-      // Track assistant's action and observation to conversation
-      if (this.memory) {
-        await this.memory.conversation_track(this.conversationId!, 'assistant', `${call.name}: ${JSON.stringify(call.arguments)}`);
-        await this.memory.conversation_track(this.conversationId!, 'assistant', `Result: ${observation}`);
       }
 
       steps.push(this.logStep(controller.currentStep, StepPhase.OBSERVATION, observation));

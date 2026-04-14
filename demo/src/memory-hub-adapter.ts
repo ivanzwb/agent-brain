@@ -33,6 +33,17 @@ export class MemoryHubAdapter implements MemoryHub, KnowledgeHub {
     return JSON.stringify({ messages });
   }
 
+  /** Read one conversation thread (e.g. web UI on load) — backed by agent-memory. */
+  async serializeConversationThread(limit = 200): Promise<string> {
+    const messages = await this.mem.getConversationHistory(limit);
+    return JSON.stringify({
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    });
+  }
+
   async memory_search(query: string, topK?: number): Promise<string> {
     const results = await this.mem.searchMemory(query, topK);
     return JSON.stringify({ results });

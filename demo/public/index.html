@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentBrain Web Demo</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f1419;
+        --panel: #1a222d;
+        --text: #e7ecf3;
+        --muted: #8b99a8;
+        --accent: #3d8bfd;
+        --border: #2a3544;
+        --console-pad-x: 1rem;
+        --msg-user-bg: #243044;
+        --msg-user-border: #334155;
+        --msg-asst-bg: #1e2a38;
+        --msg-asst-border: #2d3d4f;
+        --msg-sys-bg: #1a222d;
+        --msg-sys-border: #2a3544;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4f6f9;
+          --panel: #fff;
+          --text: #1a1f26;
+          --muted: #5c6b7a;
+          --accent: #0b5fff;
+          --border: #d5dde6;
+          --msg-user-bg: #e8f1ff;
+          --msg-user-border: #c5daf7;
+          --msg-asst-bg: #eef1f5;
+          --msg-asst-border: #d5dde6;
+          --msg-sys-bg: #f0f2f5;
+          --msg-sys-border: #d5dde6;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+      header p {
+        margin: 0.35rem 0 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 960px;
+        min-width: 0;
+        min-height: 0;
+        margin-inline: auto;
+        padding: 1rem 1rem 0;
+        box-sizing: border-box;
+      }
+      #log {
+        flex: 1 1 auto;
+        min-height: 0;
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem var(--console-pad-x);
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        font-size: 0.875rem;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .log-msg {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        max-width: min(100%, 42rem);
+      }
+      .log-msg-user {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+      .log-msg-assistant,
+      .log-msg-system {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+      .log-msg-role {
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .log-msg-bubble {
+        padding: 0.55rem 0.85rem;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+      .log-msg-user .log-msg-bubble {
+        background: var(--msg-user-bg);
+        border-color: var(--msg-user-border);
+        border-bottom-right-radius: 4px;
+      }
+      .log-msg-assistant .log-msg-bubble {
+        background: var(--msg-asst-bg);
+        border-color: var(--msg-asst-border);
+        border-bottom-left-radius: 4px;
+      }
+      .log-msg-system .log-msg-bubble {
+        background: var(--msg-sys-bg);
+        border-color: var(--msg-sys-border);
+        font-size: 0.8rem;
+        color: var(--muted);
+        border-bottom-left-radius: 4px;
+      }
+      .log-line {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      #form {
+        width: 100%;
+        max-width: 960px;
+        min-width: 0;
+        margin: 0 auto;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+      #form .compose {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        overflow: hidden;
+      }
+      #form .compose-field {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 4.5rem;
+      }
+      #form .compose-field textarea {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        min-height: 4.5rem;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        border-top-left-radius: 7px;
+        border-bottom-left-radius: 7px;
+        resize: vertical;
+        padding: 0.6rem var(--console-pad-x);
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        box-sizing: border-box;
+      }
+      #form .compose-field textarea:focus {
+        outline: none;
+      }
+      #form .compose-field textarea:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--accent);
+      }
+      #form .compose #send {
+        flex: 0 0 auto;
+        align-self: flex-end;
+        margin: 0.45rem 0.5rem 0.45rem 0.45rem;
+        white-space: nowrap;
+      }
+      textarea {
+        min-height: 4.5rem;
+        resize: vertical;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font: inherit;
+      }
+      button {
+        padding: 0.55rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      dialog {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        background: var(--panel);
+        color: var(--text);
+        max-width: min(520px, 92vw);
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.45);
+      }
+      dialog h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1rem;
+      }
+      dialog p {
+        margin: 0 0 0.75rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      dialog textarea {
+        width: 100%;
+        min-height: 5rem;
+        margin-bottom: 0.75rem;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+      .log-line.phase {
+        color: var(--muted);
+      }
+      .log-line.error {
+        color: #f87171;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>AgentBrain Web Demo</h1>
+      <p>提交任务后通过 SSE 接收阶段事件；若模型发起 ask_user，会弹出对话框。</p>
+    </header>
+    <main>
+      <div id="log" aria-live="polite"></div>
+    </main>
+    <form id="form">
+      <div class="compose">
+        <div class="compose-field">
+          <textarea id="message" placeholder="输入任务…" required></textarea>
+        </div>
+        <button type="submit" id="send">发送</button>
+      </div>
+    </form>
+    <dialog id="ask">
+      <h2>需要你的输入</h2>
+      <p id="ask-q"></p>
+      <textarea id="ask-a" placeholder="回答…"></textarea>
+      <div class="dialog-actions">
+        <button type="button" id="ask-cancel" style="background: var(--muted)">跳过（空回答）</button>
+        <button type="button" id="ask-ok">提交</button>
+      </div>
+    </dialog>
+    <script>
+      const logEl = document.getElementById('log');
+      const form = document.getElementById('form');
+      const messageEl = document.getElementById('message');
+      const sendBtn = document.getElementById('send');
+      const askDlg = document.getElementById('ask');
+      const askQ = document.getElementById('ask-q');
+      const askA = document.getElementById('ask-a');
+      const askOk = document.getElementById('ask-ok');
+      const askCancel = document.getElementById('ask-cancel');
+
+      const ROLE_LABEL = { user: '用户', assistant: '助手', system: '系统' };
+
+      let activeRunId = null;
+      let es = null;
+
+      function append(line, cls) {
+        const div = document.createElement('div');
+        div.className = 'log-line' + (cls ? ' ' + cls : '');
+        div.textContent = line;
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      /** user | assistant | system — chat bubble row */
+      function appendChatMessage(role, text) {
+        const r = role === 'user' || role === 'assistant' || role === 'system' ? role : 'system';
+        const wrap = document.createElement('div');
+        wrap.className = 'log-msg log-msg-' + r;
+        const label = document.createElement('span');
+        label.className = 'log-msg-role';
+        label.textContent = ROLE_LABEL[r] || role;
+        const bubble = document.createElement('div');
+        bubble.className = 'log-msg-bubble';
+        bubble.textContent = text;
+        wrap.appendChild(label);
+        wrap.appendChild(bubble);
+        logEl.appendChild(wrap);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      async function hydrateLogFromMemory() {
+        try {
+          const r = await fetch('/api/conversation/history');
+          if (!r.ok) return;
+          const data = await r.json();
+          const messages = data.messages;
+          if (!Array.isArray(messages) || messages.length === 0) return;
+          for (const m of messages) {
+            if (!m || typeof m.content !== 'string') continue;
+            const role = typeof m.role === 'string' ? m.role : 'system';
+            appendChatMessage(role, m.content);
+          }
+        } catch {
+          /* offline or API missing */
+        }
+      }
+
+      void hydrateLogFromMemory();
+
+      function closeStream() {
+        if (es) {
+          es.close();
+          es = null;
+        }
+        activeRunId = null;
+        sendBtn.disabled = false;
+      }
+
+      function openAsk(question) {
+        askQ.textContent = question;
+        askA.value = '';
+        askDlg.showModal();
+        return new Promise((resolve) => {
+          let settled = false;
+          const finish = (text) => {
+            if (settled) return;
+            settled = true;
+            askOk.onclick = null;
+            askCancel.onclick = null;
+            askDlg.onclose = null;
+            if (askDlg.open) askDlg.close();
+            resolve(text);
+          };
+          askOk.onclick = () => finish(askA.value);
+          askCancel.onclick = () => finish('');
+          askDlg.onclose = () => finish(askA.value);
+        });
+      }
+
+      async function submitAnswer(text) {
+        if (!activeRunId) return;
+        const r = await fetch(`/api/runs/${activeRunId}/input`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          append('[input error] ' + (j.error || r.status), 'error');
+        }
+      }
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const message = messageEl.value.trim();
+        if (!message) return;
+        sendBtn.disabled = true;
+        appendChatMessage('user', message);
+
+        const start = await fetch('/api/runs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+        if (!start.ok) {
+          append('[start error] ' + start.status, 'error');
+          sendBtn.disabled = false;
+          return;
+        }
+        const { runId } = await start.json();
+        activeRunId = runId;
+
+        es = new EventSource(`/api/runs/${runId}/events`);
+        es.onmessage = async (ev) => {
+          let data;
+          try {
+            data = JSON.parse(ev.data);
+          } catch {
+            append('[parse error] ' + ev.data, 'error');
+            return;
+          }
+          if (data.type === 'start') {
+            append('[start]');
+          } else if (data.type === 'phase') {
+            append(`[${data.phase}] ` + JSON.stringify(data.payload), 'phase');
+          } else if (data.type === 'input-request') {
+            const ans = await openAsk(data.question);
+            await submitAnswer(ans);
+          } else if (data.type === 'done') {
+            append(
+              `[done] status=${data.status} ${data.durationMs}ms tokens=${data.totalTokens}`,
+              'phase',
+            );
+            const ans = data.finalAnswer && String(data.finalAnswer).trim();
+            if (ans) appendChatMessage('assistant', ans);
+            else append('(无回答)', 'phase');
+            closeStream();
+          } else if (data.type === 'error') {
+            append('[error] ' + data.message, 'error');
+            closeStream();
+          }
+        };
+        es.onerror = () => {
+          append('[SSE disconnected]', 'error');
+          closeStream();
+        };
+      });
+    </script>
+  </body>
+</html>

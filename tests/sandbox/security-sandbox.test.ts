@@ -28,6 +28,22 @@ describe('SecuritySandbox', () => {
     expect(args['path']).toBe(path.join(tmpRoot, 'rel/file.txt'));
   });
 
+  it('prepareToolExecution always allows ask_user without invoking askPermission', async () => {
+    class NoAskSandbox extends SecuritySandbox {
+      constructor() {
+        super(mockHub, tmpRoot);
+      }
+      override async askPermission(): Promise<boolean> {
+        throw new Error('askPermission should not run for ask_user');
+      }
+    }
+    const sb = new NoAskSandbox();
+    const deny = await sb.prepareToolExecution('user_interaction', 'ask_user', '(question)', {
+      question: 'hi?',
+    });
+    expect(deny).toBeUndefined();
+  });
+
   it('prepareToolExecution returns denial JSON when DENY', async () => {
     const sb = new SecuritySandbox(mockHub, tmpRoot);
     sb.addRule({ action: 'fs_read', pattern: '**', permission: 'DENY' });
