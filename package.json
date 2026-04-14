@@ -80,7 +80,7 @@
   },
   "devDependencies": {
     "@biosbot/agent-memory": "^0.1.5",
-    "@biosbot/agent-skills": "^0.1.4",
+    "@biosbot/agent-skills": "^0.1.6",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.39",

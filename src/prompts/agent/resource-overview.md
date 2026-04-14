@@ -1,5 +1,5 @@
 Available innate tools:
-${innateTools}
+{{innateTools}}
 
 Available skills:
-${skillSummaries}
+{{skillSummaries}}
