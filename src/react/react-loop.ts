@@ -207,6 +207,7 @@ export class ReactLoop {
           2,
           4,
         );
+        console.log(`[ReAct] step=${controller.currentStep}, tools=${allTools.length}, messages=${trimmedMessages.length}`);
         tracker.trackPrompt(trimmedMessages, allTools);
         response = await model.chat(trimmedMessages, allTools);
         tracker.trackCompletion(response.content);
@@ -226,6 +227,7 @@ export class ReactLoop {
 
       // No tool call → step completed
       if (!response.toolCall) {
+        console.log(`[Step] ${planStep.id} completed without tool call. thought: ${response.content.substring(0, 200)}`);
         return {
           stepId: planStep.id,
           steps,
@@ -235,6 +237,7 @@ export class ReactLoop {
       }
       // Log ACTION
       const call = response.toolCall;
+      console.log(`[ReAct] ACTION: ${call.name}(${JSON.stringify(call.arguments)})`);
       steps.push(this.logStep(controller.currentStep, StepPhase.ACTION, `${call.name}(${JSON.stringify(call.arguments)})`, call.name, call.arguments));
       eventPublisher?.publish('step:action', { step: controller.currentStep, tool: call.name, args: call.arguments });
 
