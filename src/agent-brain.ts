@@ -111,12 +111,10 @@ export class AgentBrain {
   }
 
   private buildSystemBase(guidance: string, phasePrompt: string): string {
-    const innateTools: string = this.innateToolHub.getToolsDescription().join(', \n')?? '(none)';
     const skillSummaries: string = this.skillHub.getSkillsDescription().join('\n\n')?? '(none)';
 
     // Move formatting to the prompt template system
     const resourceOverview = renderPrompt('agent.resource_overview', {
-      innateTools,
       skillSummaries,
     });
 
@@ -318,7 +316,8 @@ export class AgentBrain {
 
     tracker.trackPrompt(baseMessages);
     console.log('[PERCEIVE] messages:', JSON.stringify(baseMessages, null, 2));
-    const response = await this.model.chat(baseMessages);
+    const innateTools = this.innateToolHub.getTools();
+    const response = await this.model.chat(baseMessages, innateTools);
     tracker.trackCompletion(response.content);
     console.log('[PERCEIVE] raw response:', response.content.substring(0, 300));
     const perception = this.parseJson<Perception>(response.content, this.emptyPerception());
@@ -344,7 +343,8 @@ export class AgentBrain {
     const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
     console.log('[REFLECT] messages:', JSON.stringify(trimmedMessages, null, 2));
-    const response = await this.model.chat(trimmedMessages);
+    const innateTools = this.innateToolHub.getTools();
+    const response = await this.model.chat(trimmedMessages, innateTools);
     tracker.trackCompletion(response.content);
     return this.parseJson<Assessment>(response.content, this.emptyAssessment());
   }
@@ -391,7 +391,8 @@ export class AgentBrain {
 
     const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
-    const response = await this.model.chat(trimmedMessages);
+    const innateTools = this.innateToolHub.getTools();
+    const response = await this.model.chat(trimmedMessages, innateTools);
     tracker.trackCompletion(response.content);
     console.log('[PLAN] raw response:', response.content.substring(0, 300));
     return this.parseJson<Plan>(response.content, this.emptyPlan());
@@ -470,7 +471,8 @@ export class AgentBrain {
 
     const trimmedMessages = await this.budget.trimMessages(messages, this.budget.remaining(messages), 1, 1);
     tracker.trackPrompt(trimmedMessages);
-    const response = await this.model.chat(trimmedMessages);
+    const innateTools = this.innateToolHub.getTools();
+    const response = await this.model.chat(trimmedMessages, innateTools);
     tracker.trackCompletion(response.content);
     return this.parseJson<Reflection>(response.content, this.emptyReflection());
   }

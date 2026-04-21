@@ -45,8 +45,9 @@ describe('prompt-system', () => {
         workingDirectory: '/tmp/w',
         guidance: 'G',
         phasePrompt: 'P',
+        resourceOverview: 'R',
       });
-      expect(out).toBe('SYS\nCurrent working directory: /tmp/w\n\nG\n\nP');
+      expect(out).toBe('SYS\nCurrent working directory: /tmp/w\n\nG\n\nP\n\nR');
     });
 
     it('resolves default-style path from placeholder only', () => {
@@ -56,6 +57,7 @@ describe('prompt-system', () => {
         workingDirectory: defaultWs,
         guidance: 'G',
         phasePrompt: 'P',
+        resourceOverview: '',
       });
       expect(out).toContain(`Current working directory: ${defaultWs}`);
       expect(out).toContain('G');
